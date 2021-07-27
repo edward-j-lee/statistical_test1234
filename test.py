@@ -1,8 +1,8 @@
 import numpy as np
 #import pandas as pd
 import matplotlib.pyplot as plt
-from sampling_algorithms.importance import generate_weighted1
-from sampling_algorithms.rejection import sample
+#from sampling_algorithms.importance import generate_weighted1
+#from sampling_algorithms.rejection import sample
 import scipy.stats as stats
 from scipy.stats._hypotests import _cdf_cvm
 cdf=stats.beta.cdf
@@ -18,7 +18,7 @@ def ecdf_cdf(sample, weights, cdf, args):
     cdfs=cdf(sample, *args)
     return ecdfs, cdfs
     
-def kstest(sample, cdf, args, weights=[]):
+def kstest(sample, cdf, args=(), weights=[]):
     N=len(sample)
     if len(weights)==0:
         weights=[1]*N
@@ -28,22 +28,23 @@ def kstest(sample, cdf, args, weights=[]):
     return D, stats.kstwo.sf(D, N)
 
 
-def chisquare(sample, cdf, args, bins=100, range_=None, weights=[]):
+
+def chisquare(sample, cdf, args=(), bins=100, range_=None, weights=[]):
     N=len(sample)
     if len(weights)==0:
         weights=np.asarray([1]*N)
     if range_==None:
-        t=np.histogram(sample, weights=weights, bins=bins)
-    else:
-        t=np.histogram(sample, weights=weights, bins=bins, range=range_)
+        range_=(np.min(sample), np.max(sample))
+    t=np.histogram(sample, weights=weights, bins=bins, range=range_)
     sam=t[0]
-    ran=t[1][1:]
+    ran=t[1]
     expected=np.diff(np.vectorize((lambda x: cdf(x, *args)))(ran))*N
     #cisqstat=(expected-sam)**2/expected
+    #print (len(sam), len(expected))
     return (stats.chisquare(sam, expected))
 
 #not working
-def cramertest(sample, cdf, args, weights=[]):
+def cramertest(sample, cdf, args=(), weights=[]):
     N=len(sample)
     if len(weights)==0:
         weights=[1]*N
@@ -70,11 +71,11 @@ def plot_p(sampler, cdf, args, sample_size=50, p_size=1000, test=kstest):
     plt.hist(pval, bins=100, density=True)
 
 #example
-plot_p(generate_weighted1, cdf, (2,3), sample_size=50, p_size=1000, test=kstest)
+#plot_p(generate_weighted1, cdf, (2,3), sample_size=50, p_size=1000, test=kstest)
 
 
 
-print (stats.cramervonmises(sample, stats.beta.cdf, args=(2,3)))
+#print (stats.cramervonmises(sample, stats.beta.cdf, args=(2,3)))
 #print ('cramer', cramertest(sample, stats.beta.cdf, args=(2,3)))
 
 
@@ -83,7 +84,6 @@ print (stats.cramervonmises(sample, stats.beta.cdf, args=(2,3)))
 def cramervonmises(rvs, cdf, args=(), weights=[]):
     if isinstance(cdf, str):
         cdf = getattr(distributions, cdf).cdf
-
     vals = (np.asarray(rvs))
 
     if vals.size <= 1:
@@ -106,12 +106,12 @@ def cramervonmises(rvs, cdf, args=(), weights=[]):
 
     return (w, p)
 
-print ('cramer2', cramervonmises(sample, stats.beta.cdf, args=(2,3)))
+#print ('cramer2', cramervonmises(sample, stats.beta.cdf, args=(2,3)))
 
 
 
 #https://towardsdatascience.com/integrals-are-fun-illustrated-riemann-stieltjes-integral-b71a6e003072
-def derivative(f, a, h=0.001):
+def derivative(f, a, h=0.01):
     return (f(a + h) - f(a - h))/(2*h)
     #https://towardsdatascience.com/integrals-are-fun-illustrated-riemann-stieltjes-integral-b71a6e003072
 def stieltjes_integral(f, g, a, b, n):
@@ -121,9 +121,9 @@ def stieltjes_integral(f, g, a, b, n):
     result = 0.5*f(a)*dg(a) + sum([f(a + i*h)*dg(a + i*h) for i in range(1, n)]) + 0.5*f(b)*dg(b)
     result *= h
     return result
-print (range)
+
 #attempt to calculate cramer von miser test with RS integral
-def cramer_rs(sample, cdf, args, weights=[]):
+def cramer_rs(sample, cdf, args=(), weights=[]):
     N=len(sample)
     if len(weights)==0:
         weights=[1]*N
@@ -147,8 +147,44 @@ def cramer_rs(sample, cdf, args, weights=[]):
     def ith_term(i):
         a=sample[i]
         b=sample[i+1]
-        return stieltjes_integral(Ψ, F_0, a, b, 10000)
+        return stieltjes_integral(Ψ, F_0, a, b, 1000)
     C_n= ((1/3)*F_0(sample[0])**3)-(1/3)*(F_0(sample[-1])-1)**3+np.sum([ith_term(i) for i in range(0,N-1)])
-    return N*C_n
-print ('cramer3', cramer_rs(sample, stats.beta.cdf, args=(2,3)))
+    w=N*C_n
+    p = max(0, 1. - _cdf_cvm(w, N))
+    return w, p
+#print ('cramer3', cramer_rs(sample, stats.beta.cdf, args=(2,3)))
+   
+def R_sqaure(sample, pdf, weights=[], bins=0, plot=False):
+    N=len(sample)
+    if len(weights)==0:
+        weights=[1]*N
+    if bins==0:
+        bins=N/10
+    yval, xval=np.histogram(sample, weights=weights, bins=bins, density=True)
+    xval=xval[1:]
+    ȳ=np.mean(yval)
+    SS_tot=0
+    SS_res=0
+    for i in range(bins):
+        SS_tot+=(yval[i]-ȳ)**2
+        e=pdf(xval[i])-yval[i]
+        es.append(e)
+        SS_res+=e**2
+    R_sq=1-(SS_res/SS_tot)
+    if plot==True: # plots residual graph
+        plt.scatter(xval, es)
+    return R_sq
+
+def nmoment(x, n):
+    return np.sum((x)**n) / np.size(x)
+
+f=stats.beta(a=2,b=3)
+
+def MSE(sample, f, n):
+    res=0
+    for i in range(n):
+        sample_moment=nmoment(sample, i)
+        true_mom=f.moment(n=i)
+        res+=(true_mom-sample_moment)**2
+    return res/n
 

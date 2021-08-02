@@ -1,16 +1,17 @@
 import numpy as np
 from scipy import stats
-
-def supx(func, xrange=(0,1)):
+        
+def supx(func, xrange=(-20,20)):
     x=np.linspace(*xrange, 1000)
     y=np.vectorize(func)(x)
     d=np.max(y)
     condition=(y==d)
     return x[np.where(condition)[0][0]]
-def acc_rej_samp(func, g_pdf, g_samp, supx, N=100):
+
+def acc_rej_samp(func, g_pdf, g_samp, supX, N=100):
     #acceptance rejection sampling
     #func is a  pdf without normalizing constant
-    M=func(supx)/g_pdf(supx)
+    M=func(supX)/g_pdf(supX)
     c=np.zeros(1)
     counter=0
     while np.size(c)-1<N:

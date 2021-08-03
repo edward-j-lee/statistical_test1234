@@ -12,7 +12,7 @@ def ecdf_x_ndim(x, dist, weights):
     for i in range(dim):
         sample1=np.asarray(dist.loc[:,i])
         weights1=np.asarray(weights.loc[:,i])
-        res*=ecdf_x(x[i], reorder(sample1, weights1))
+        res*=ecdf_x(x[i], *reorder(sample1, weights1))
     return res
 
 def mutlivariate_kstest(samples,cdf, args, weights=[]):
@@ -38,4 +38,4 @@ def kstest_ndim(samples, cdfs, args):
     pval[0]=pval[0]*dim
     D=np.max(Dstats)
     p_=stats.kstwo.sf(D, N)
-    return D,p_
+    return D,p_*dim_

@@ -27,6 +27,7 @@ def ecdf_cdf(sample, weights, cdf, args):
     if True:
         return ecdfs, cdfs
 
+
 def ecdf_x(x, sample, weights):
     #sample and weights are assuemd to be reorderd already
     total=np.sum(weights)
@@ -81,9 +82,6 @@ def plot_p(sampler, cdf, args, sample_size=50, p_size=1000, test=kstest):
 #plot_p(generate_weighted1, cdf, (2,3), sample_size=50, p_size=1000, test=kstest)
 
 
-
-
-
 #https://towardsdatascience.com/integrals-are-fun-illustrated-riemann-stieltjes-integral-b71a6e003072
 def derivative(f, a, h=0.01):
     return (f(a + h) - f(a - h))/(2*h)
@@ -95,8 +93,6 @@ def stieltjes_integral(f, g, a, b, n):
     result = 0.5*f(a)*dg(a) + sum([f(a + i*h)*dg(a + i*h) for i in range(1, n)]) + 0.5*f(b)*dg(b)
     result *= h
     return result
-
-
 
 #attempt to calculate cramer von miser test with RS integral
 def cramer_rs(sample, cdf, args=(), weights=[]):

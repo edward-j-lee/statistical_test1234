@@ -11,6 +11,11 @@ import matplotlib.pyplot as plt
 #take prior parameters and observations (as array)
 #generates sample from exact distribution
 #N is number of data points of the user generated posterior
+#p> 0.01 means pass keep track with increasing posterior size
+# examples of multivariate inf problems that work
+#generate nice plots with number of samples changed for diff inf algorithm
+
+critical_p_val=0.01
 
 def beta_bernoulli(parameters, obs, N, factor=10):
    s=np.sum(obs)
@@ -18,7 +23,7 @@ def beta_bernoulli(parameters, obs, N, factor=10):
    alpha_new=parameters[0]+s
    beta_new=parameters[1]+n-s
    return stats.beta.rvs(a=alpha_new, b=beta_new, size=factor*N)
-
+ 
 
 def gamma_poisson(parameters, obs, N, factor=10):
     s=np.sum(obs)
@@ -67,7 +72,7 @@ def import_sample(name):
     df=pd.read_csv(name, header=None)
     Series=np.asarray(df).flatten()
     Series=Series[np.logical_not(np.isnan(Series))]
-    return Series
+    return Series #np array
 
 distributions={'beta_bernoulli': beta_bernoulli, 'gamma_poisson':gamma_poisson, 'normal_known_var':normal_known_var, 'normal_known_mu':normal_known_mu,
 'normal_unknown_mu_std':normal_unknown_mu_std}
@@ -78,32 +83,62 @@ def compare(posterior, obs, parameters, distribution_name, plot=True, plotp=Fals
     exact=generator(parameters, obs=obs, N=N, factor=factor)
     if plot==True:
         points=np.histogram(exact, bins=100, density=True)
-        plt.hist(posterior, bins=100, density=True, color='b')
-        plt.plot(points[1][:-1], points[0], color='r')
+        plt.hist(posterior, bins=100, density=True, color='b', label='estimated posterior')
+        plt.plot(points[1][:-1], points[0], color='r', label='sample from exact posterior')
+        plt.legend(loc="upper right")
+        plt.show()
     if plotp==True:
         pval=[]
+        passed_count=0
         k=N/1000
         if k>=1000:
             a=0
             while a+1000<=N:
-                pval.append(stats.kstest(posterior[a:a+1000], exact)[1])
+                p=stats.kstest(posterior[a:a+1000], exact)[1]
+                pval.append(p)
                 a+=1000
+                if p>critical_p_val:
+                    passed_count+=1
             if a<N:
-                pval.append(stats.kstest(posterior[a:], exact)[1])
+                p=stats.kstest(posterior[a:], exact)[1]
+                pval.append(p)
+                if p>critical_p_val:
+                    passed_count+=1
             fig,ax=plt.subplots()
-            ax.hist(pval, bins=100, density=True)
+            perc_passed=(passed_count/len(pval))*100
+            ax.hist(pval, bins=100, density=True, label=str(perc_passed)+'%'+' of p values has passed')
         else:
             for i in range(1000):
                 partialsample=np.random.choice(posterior, int(N/2))
                 p=stats.kstest(partialsample, exact)[1]
                 pval.append(p)
+                if p>critical_p_val:
+                    passed_count+=1
+            perc_passed=(passed_count/len(pval))*100
             fig, ax=plt.subplots()
-            ax.hist(pval, bins=100, density=True, color='g')
+            ax.hist(pval, bins=100, density=True, color='g',label=str(perc_passed)+'%'+' of p values has passed')
+        ax.set_title('distribution of p value')
+        plt.show()
     return stats.ks_2samp(posterior, exact)
+
+n=0
+sample_size=[]
+for j in range(3,6):
+    for i in range(10**j,10**(j+1),10**j):
+        sample_size.append(i)
+sample_size+=[10**6]
 
 if __name__=='__main__':
     print ('hello world')
     obs=import_sample('obs2')
     posterior=import_sample('posterior2')
     print (compare(posterior, obs, (2,3),'beta_bernoulli', plot=True,plotp=True, factor=1000))
-    
+    #import pymc3 as pm
+    """
+    y_obs=[0]*8+[1]*2
+    for i in sample_size:
+        pm.Model() as model:
+            prior=pm.Beta(name='prior', alpha=2, beta=3)
+            likelihood=pm.Bernoulli(name='bern', p=prior, observed=y_obs)
+            trace=pm.sample(i)
+    """    

@@ -17,4 +17,3 @@ def generate_weighted2(size, f=lambda x: stats.beta.pdf(x,2,3)):
     return imp_sampling_w(f, size, g_samp, g_pdf)    
 
     
-    

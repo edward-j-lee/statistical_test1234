@@ -19,7 +19,7 @@ def reorder(sample, weights=[]):
     cond=weights>0
     return sample[cond], weights[cond]
 
-def ecdf_cdf(sample, weights, cdf, args):
+def ecdf_cdf(sample, weights, cdf, args=()):
     #sample and weights are assumed to be ordered appropriately
     total=np.sum(weights)
     ecdfs=(np.cumsum(weights))/total

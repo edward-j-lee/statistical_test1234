@@ -15,6 +15,13 @@ def ecdf_x_ndim(x, dist, weights):
         res*=ecdf_x(x[i], *reorder(sample1, weights1))
     return res
 
+def pd_to_array(dist, weights)
+    dim=
+    array=np.asarray([])
+    for i in dim:
+        k=np.asarray(d)
+        
+
 def mutlivariate_kstest(samples,cdf, args, weights=[]):
     #samples and weights are pandas dataframes
     if len(weights)==0:

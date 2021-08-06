@@ -280,6 +280,7 @@ if __name__=='__main__':
     output = open('pymc_posterior_inference_betabernoulli_2_3_with_varying_sample_size', 'wb')
     pickle.dump(dictionary, output)
     output.close()
+    """
     k='pymc_posterior_inference_betabernoulli_2_3_with_varying_sample_size'
     file=open(k, 'rb')
     b = pickle.load(file)
@@ -295,7 +296,7 @@ if __name__=='__main__':
     plt.xlabel='number of samples'
     plt.title('p values of beta_bernoulli inference problem given different sample size')
     plt.show()
-    """
+
 
     
         

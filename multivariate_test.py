@@ -1,8 +1,8 @@
 import scipy.stats as stats
-from stat_test import ecdf_x, reorder
+from stat_test import ecdf_x, reorder, kstest
 import numpy as np
 import pandas as pd
-#from inference import import_sample
+from inference import CustomError
 
 def ecdf_x_ndim(x, dist, weights):
     #x is tuple or list, dist and weights are dataframe
@@ -15,15 +15,15 @@ def ecdf_x_ndim(x, dist, weights):
         res*=ecdf_x(x[i], *reorder(sample1, weights1))
     return res
 
-def pd_to_array(dist, weights)
-    dim=
-    array=np.asarray([])
-    for i in dim:
-        k=np.asarray(d)
+
         
 
-def mutlivariate_kstest(samples,cdf, args, weights=[]):
+def mutlivariate_kstest(samples,cdf, args=(), weights=[]):
     #samples and weights are pandas dataframes
+    if type(samples)==np.ndarray:
+        samples=pd.DataFrame(samples, columns=None)
+    if type(weights)==np.ndarray:
+        weights=pd.DataFrame(weights, columns=None)
     if len(weights)==0:
         weights=pd.DataFrame(np.ones(samples.shape))
     D= np.max([abs(ecdf_x_ndim(np.asarray(i[1]), samples, weights)-cdf(np.asarray(i[1]), *args)) for i in samples.iterrows()])
@@ -33,16 +33,39 @@ def mutlivariate_kstest(samples,cdf, args, weights=[]):
 
 
 #apply ks test individually to each dimension
-def kstest_ndim(samples, cdfs, args):
+def kstest_ndim(samples, cdfs, weights=[]):
+    #samples and weights are np array
     N,dim=samples.shape
+    if len(cdfs)!=dim:
+        raise CustomError('dimension of cdf does not match array')
     Dstats=[]
     pval=[]
-    for i, j, k in zip(samples, cdfs, args):
-        d, p= stats.kstest(i,j, args=k)
+    for i, j, w in zip(np.transpose(samples), cdfs, np.transpose(weights)):
+        d, p= kstest(sample=i, cdf=j, weights=w)
         Dstats.append(d)
         pval.append(p)
     pval=np.sort(pval)
     pval[0]=pval[0]*dim
     D=np.max(Dstats)
     p_=stats.kstwo.sf(D, N)
-    return D,p_*dim_
+    return D,p_*dim
+
+
+#testing multimdimensional ks test with multivariate normal distribution
+def test_kstest_multivar_norm(size=50, mean=[], cov=[]):
+    if len(mean)==0:
+        mean=[0,0,0,0]
+    n=len(mean)
+    if len(cov)==0 or len(cov)<n:
+        cov=np.identity(len(mean))
+    sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+    cdf_overall= lambda x: stats.multivariate_normal.cdf(x, mean=mean, cov=cov)
+    cdfs=[(lambda x: stats.norm.cdf(x, loc=mean[i], scale=cov[i][i])) for i in range(n)]
+    
+    kstest1=mutlivariate_kstest(sample, cdf_overall)
+    kstest2=kstest_ndim(sample, cdfs)
+    
+    return kstest1, kstest2
+
+if __name__=='__main':
+    print (test_kstest_multivar_norm(size=100))

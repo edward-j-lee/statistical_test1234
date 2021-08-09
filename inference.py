@@ -62,8 +62,6 @@ def normal_known_mu(parameters, obs):
     return alpha_new, beta_new
 
 
-
-
 #takes a name of a csv file that contains one dimensional data
 #and returns a 1 dimensional np array 
 def import_sample(name):
@@ -74,11 +72,9 @@ def import_sample(name):
     return Series #np array
 
 
-distributions={'beta_bernoulli': beta_bernoulli, 'gamma_poisson':gamma_poisson, 'normal_known_var':normal_known_var, 'normal_known_mu':normal_known_mu,
-'normal_unknown_mu_std':normal_unknown_mu_std}
+distributions={'beta_bernoulli': beta_bernoulli, 'gamma_poisson':gamma_poisson, 'normal_known_var':normal_known_var, 'normal_known_mu':normal_known_mu,}
 
-dist_func={'beta_bernoulli': stats.beta, 'gamma_poisson': stats.gamma, 'normal_known_var':stats.norm, 'normal_known_mu':stats.invgamma,
-         'normal_unknown_mu_std':normal_inv_gamma}
+dist_func={'beta_bernoulli': stats.beta, 'gamma_poisson': stats.gamma, 'normal_known_var':stats.norm, 'normal_known_mu':stats.invgamma}
 biv_dist=['normal_unknown_mu_std']
 
 def plot_p(posterior, exactsample_or_cdf, plotp=True):
@@ -180,9 +176,8 @@ if __name__=='__main__':
     print ('hello world')
     #obs=import_sample('obs2')
     posterior=import_sample('posterior2')
-    print (kstest_cdf(posterior, obs=import_sample('obs2'), (2,3), 'beta_bernoulli', plot=True, plotp=True))
+    #print (kstest_cdf(posterior, obs=import_sample('obs2'), parameters=(2,3), distribution_name='beta_bernoulli', plot=True, plotp=True))
     #print (compare(posterior, obs, (2,3),'beta_bernoulli', plot=True,plotp=True, factor=100))
-    print(testing_test_function_normal(size=2000, obs=obs))
     y_obs=[0]*8+[1]*2
     dictionary=dict()
     """

@@ -40,6 +40,8 @@ def kstest_ndim(samples, cdfs, weights=[]):
         raise CustomError('dimension of cdf does not match array')
     Dstats=[]
     pval=[]
+    if weights==[]:
+        weights=np.ones(N*dim).reshape(N,dim)
     for i, j, w in zip(np.transpose(samples), cdfs, np.transpose(weights)):
         d, p= kstest(sample=i, cdf=j, weights=w)
         Dstats.append(d)
@@ -48,24 +50,65 @@ def kstest_ndim(samples, cdfs, weights=[]):
     pval[0]=pval[0]*dim
     D=np.max(Dstats)
     p_=stats.kstwo.sf(D, N)
+    print ('adjusted p', p_*dim)
     return D,p_*dim
 
 
 #testing multimdimensional ks test with multivariate normal distribution
-def test_kstest_multivar_norm(size=50, mean=[], cov=[]):
-    if len(mean)==0:
-        mean=[0,0,0,0]
-    n=len(mean)
-    if len(cov)==0 or len(cov)<n:
+def test_kstest_multivar_norm(distribution=[],  size=50, mean=[], cov=[]):
+    if mean==[] and cov==[] and distribution==[]:
+        mean=[0]*4
+        cov=np.identity(4)
+        sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+    if mean==[] and cov==[] and distribution !=[]:
+        n,dim=distribution.shape
+        mean=[0]*dim
+        cov=np.identity(dim)
+
+    if mean==[] and cov!=[] and distribution==[]:
+        mean=[0]*len(cov)
+        sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+    if mean==[] and cov!=[] and distribution!=[]:
+        n,dim = distribution.shape
+        if len(cov)!=dim:
+            cov=np.identity(dim)
+        else:
+            mean=[0]*dim
+
+
+    if mean!=[] and cov==[] and distribution==[]:
         cov=np.identity(len(mean))
-    sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+        sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+    if mean!=[] and cov==[] and distribution!=[]:
+        n,dim=distribution.shape
+        if len(mean)!=dim:
+            mean=[0]*dim
+        cov=np.identity(dim)
+
+    if mean!=[] and cov!=[] and distribution==[]:
+        if len(cov)!=len(mean):
+            cov=np.identity(len(mean))
+        sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+    if mean!=[] and cov!=[] and distribution!=[]:
+        n,dim=distribution.shape
+        if len(mean)!=dim:
+            mean=[0]*dim
+        if len(cov)!=dim:
+            cov=np.identity(dim)
+
+    try:
+        sample
+    except NameError:
+        sample=np.asarray(distribution)
+
     cdf_overall= lambda x: stats.multivariate_normal.cdf(x, mean=mean, cov=cov)
-    cdfs=[(lambda x: stats.norm.cdf(x, loc=mean[i], scale=cov[i][i])) for i in range(n)]
-    
+    cdfs=[(lambda x: stats.norm.cdf(x, loc=mean[i], scale=cov[i][i])) for i in range(len(mean))]
+
     kstest1=mutlivariate_kstest(sample, cdf_overall)
     kstest2=kstest_ndim(sample, cdfs)
-    
+
     return kstest1, kstest2
 
-if __name__=='__main':
-    print (test_kstest_multivar_norm(size=100))
+
+if __name__=='__main__':
+    print (test_kstest_multivar_norm(size=10))

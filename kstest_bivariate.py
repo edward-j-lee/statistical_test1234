@@ -26,6 +26,7 @@ def kstest_bivariate(samples, cdf):
                 if u_i[j][0]>u_i[i][0] and u_i[j][1]<u_i[j][0]:
                     res.append((u_i[j][0], u_i[j][0]))
         return res
+    
     IntP=intersectionpoints(samples)
     y=samples[:,1]
     x=samples[:,0]

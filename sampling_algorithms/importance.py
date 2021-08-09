@@ -3,7 +3,7 @@ import scipy.stats as stats
 
 def  imp_sampling_w(p, N, q_samp, q_pdf, f=lambda x:x):
     xvar=q_samp(N)
-    zvar=np.vectorize(lambda x: (p(x))/q_pdf(x))(xvar)
+    zvar=np.vectorize(lambda x: (f(x)*p(x))/q_pdf(x))(xvar)
     return xvar, zvar
 
 def generate_weighted1(size, f=lambda x: stats.beta.pdf(x,2,3)):

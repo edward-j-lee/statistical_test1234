@@ -8,7 +8,6 @@ from multivariate_test import test_kstest_multivar_norm, kstest_ndim
 from stat_test import kstest
 
 def import_sample_ndim(name):
-    name+='.csv'
     df=pd.read_csv(name, header=None)
     return np.asarray(df)
 #1
@@ -52,11 +51,11 @@ def multiver_norm_known_mu(v, phi, mu, obs):
     C=s[0]
     for c in s[1:]:
         C=np.add(C, c)
-    
+
     phi_new=np.add(phi, C)
     
     return v_new, phi_new
-    
+
 #4
 def multivar_norm_inv_wishart(parameters, obs):
     x1, x2, x3, x4 = parameters
@@ -198,30 +197,7 @@ def compare_NIW_exact_sample(posterior_mean, posterior_var, obs, parameters,mean
         d_cov, p_cov = test_cov(posterior_var, exact_cov)
     
         return (d_mean, p_mean), (d_cov, p_cov)
-    
-class normal_inv_gamma:
-    def __init__(self):
-        pass
-    
-    @classmethod
-    def rvs(self, mu_new, nu_new,alpha_new, beta_new, size):
-        posterior_var=stats.invgamma.rvs(a=alpha_new, scale=beta_new, size=size)
-        posterior_mean=stats.norm.rvs(loc=mu_new, scale=np.sqrt(posterior_var/nu_new), size=size)
-        return np.stack((posterior_mean, np.sqrt(posterior_var)), axis=1) 
-    
-    @classmethod
-    def cdf(self, val, mu_new, nu_new, alpha_new, beta_new):
-        IG=stats.invgamma.cdf(val[1]**2,a=alpha_new, scale=beta_new)
-        N=stats.norm.cdf(val[0], loc=mu_new, scale=val[1]**2/nu_new)
-        return N*IG    
-    
-    @classmethod
-    def pdf(self, val, mu, nu, alpha, beta):
-        IG=stats.invgamma.pdf(val[1]**2, a=alpha, b=beta)
-        N=stats.norm.pdf(val[0], loc=mu, scale=val[1]**2/nu)
-        return N*IG
-    
-    
+
 if __name__=='__main__':
     #pass
     #testing normal with two unknown

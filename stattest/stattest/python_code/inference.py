@@ -92,7 +92,7 @@ def plot_p(posterior, exactsample_or_cdf, weights=[], plotp=True):
             print ('more than million sample size')
             print ('calculating p values with non overalpping sample')
             a=0
-            while a+1000<=N:#########here line 94
+            while a+1000<=N:#here
                 p=kstest(posterior[a:a+1000], exact, weights=weights[a:a+1000])[1]
                 pval.append(p)
                 a+=1000
@@ -147,7 +147,7 @@ def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True
         plt.title('comparing estimated posterior with samples drawn from exact distribution')
         plt.show()
     perc_passed= plot_p(posterior, exact, weights=weights, plotp=plotp)
-    return perc_passed, stats.kstest(posterior, exact)
+    return perc_passed, kstest(posterior, exact, weights=weights)
 
 def kstest_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=True):
     N=len(posterior)
@@ -175,9 +175,9 @@ def kstest_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=T
         plt.title('comparing ecdf of estimated posterior with exact cdf')
         plt.show()
     
-    perc_passed= plot_p(posterior, cdf, plotp=plotp)
+    perc_passed= plot_p(posterior, cdf, plotp=plotp, weights=weights)
     
-    return perc_passed, stats.kstest(posterior, cdf)
+    return perc_passed, kstest(posterior, cdf, weights=weights)
 
 
 sample_size=[1000,5000,10000,50000,100000,500000,1000000]

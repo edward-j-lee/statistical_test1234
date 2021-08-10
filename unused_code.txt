@@ -1,0 +1,24 @@
+    
+class normal_inv_gamma:
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def rvs(self, mu_new, nu_new,alpha_new, beta_new, size):
+        posterior_var=stats.invgamma.rvs(a=alpha_new, scale=beta_new, size=size)
+        posterior_mean=stats.norm.rvs(loc=mu_new, scale=np.sqrt(posterior_var/nu_new), size=size)
+        return np.stack((posterior_mean, np.sqrt(posterior_var)), axis=1) 
+    
+    @classmethod
+    def cdf(self, val, mu_new, nu_new, alpha_new, beta_new):
+        IG=stats.invgamma.cdf(val[1]**2,a=alpha_new, scale=beta_new)
+        N=stats.norm.cdf(val[0], loc=mu_new, scale=val[1]**2/nu_new)
+        return N*IG    
+    
+    @classmethod
+    def pdf(self, val, mu, nu, alpha, beta):
+        IG=stats.invgamma.pdf(val[1]**2, a=alpha, b=beta)
+        N=stats.norm.pdf(val[0], loc=mu, scale=val[1]**2/nu)
+        return N*IG
+    
+    

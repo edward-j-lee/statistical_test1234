@@ -29,10 +29,12 @@ def mutlivariate_kstest(samples,cdf, args=(), weights=[]):
     D= np.max([abs(ecdf_x_ndim(np.asarray(i[1]), samples, weights)-cdf(np.asarray(i[1]), *args)) for i in samples.iterrows()])
     N=len(samples)
     p=stats.kstwo.sf(D, N)
+    p = np.clip(p, 0, 1)
     return D,p
 
 
 #apply ks test individually to each dimension
+#cdfs could be list of cdfs or list of samples for two sample test
 def kstest_ndim(samples, cdfs, weights=[]):
     #samples and weights are np array
     N,dim=samples.shape
@@ -42,20 +44,34 @@ def kstest_ndim(samples, cdfs, weights=[]):
     pval=[]
     if weights==[]:
         weights=np.ones(N*dim).reshape(N,dim)
-    for i, j, w in zip(np.transpose(samples), cdfs, np.transpose(weights)):
-        d, p= kstest(sample=i, cdf=j, weights=w)
-        Dstats.append(d)
-        pval.append(p)
-    pval=np.sort(pval)
-    pval[0]=pval[0]*dim
-    D=np.max(Dstats)
-    p_=stats.kstwo.sf(D, N)
-    print ('adjusted p', p_*dim)
-    return D,p_*dim
+    if not callable(cdfs[0]):
+        for i, j, w in zip(np.transpose(samples), np.transpose(cdfs), np.transpose(weights)):
+            d, p= kstest(sample=i, cdf=j, weights=w)
+            Dstats.append(d)
+            pval.append(p)
+        pval=np.sort(pval)
+        pval[0]=pval[0]*dim
+        D=np.max(Dstats)
+        p_=stats.kstwo.sf(D, N)
+        p_ = np.clip(p_, 0, 1)
+        print ('adjusted p', p_*dim)
+        return D,p_*dim
+    else:
+        for i, j, w in zip(np.transpose(samples), cdfs, np.transpose(weights)):
+            d, p= kstest(sample=i, cdf=j, weights=w)
+            Dstats.append(d)
+            pval.append(p)
+        pval=np.sort(pval)
+        pval[0]=pval[0]*dim
+        D=np.max(Dstats)
+        p_=stats.kstwo.sf(D, N)
+        p_ = np.clip(p_, 0, 1)
+        print ('adjusted p', p_*dim)
+        return D,p_*dim
 
 
 #testing multimdimensional ks test with multivariate normal distribution
-def test_kstest_multivar_norm(distribution=[],  size=50, mean=[], cov=[]):
+def test_kstest_multivar_norm(distribution=[], weights=[], size=50, mean=[], cov=[]):
     if mean==[] and cov==[] and distribution==[]:
         mean=[0]*4
         cov=np.identity(4)
@@ -104,8 +120,8 @@ def test_kstest_multivar_norm(distribution=[],  size=50, mean=[], cov=[]):
     cdf_overall= lambda x: stats.multivariate_normal.cdf(x, mean=mean, cov=cov)
     cdfs=[(lambda x: stats.norm.cdf(x, loc=mean[i], scale=cov[i][i])) for i in range(len(mean))]
 
-    kstest1=mutlivariate_kstest(sample, cdf_overall)
-    kstest2=kstest_ndim(sample, cdfs)
+    kstest1=mutlivariate_kstest(sample, cdf_overall, weights=weights)
+    kstest2=kstest_ndim(sample, cdfs, weights=weights)
 
     return kstest1, kstest2
 

@@ -5,6 +5,7 @@ from sampling_algorithms.importance import generate_weighted1
 from sampling_algorithms.rejection import sample
 import scipy.stats as stats
 from scipy.stats._hypotests import _cdf_cvm
+import ks_2samp_modified
 cdf=stats.beta.cdf
 args=(2,3)
 
@@ -43,11 +44,19 @@ def ecdf_x(x, sample, weights):
 
 def kstest(sample, cdf, args=(), weights=[]):
     N=len(sample)
-    sample, weights= reorder(sample, weights)
-    ecdfs, cdfs = ecdf_cdf(sample, weights, cdf, args)
-    d=np.abs(np.diff((ecdfs, cdfs))[0])
-    D=np.max(d)
-    return D, stats.kstwo.sf(D, N)
+    if callable(cdf):
+        sample, weights= reorder(sample, weights)
+        ecdfs, cdfs = ecdf_cdf(sample, weights, cdf, args)
+        d=np.abs(np.diff((ecdfs, cdfs))[0])
+        D=np.max(d)
+        p=stats.kstwo.sf(D,N)
+        p=np.clip(0,1,p)
+        return D, p
+    else:
+        exact=cdf
+        D,p= ks_2samp_modified.ks_2samp(data1=sample, weights=weights, data2=exact)
+        return D,p
+        
 
 
 
@@ -66,8 +75,11 @@ def chisquare(sample, cdf, args=(), bins=100, range_=None, weights=[]):
     return (stats.chisquare(sam, expected))
 
 
+#plots p values given a sampling algorithm and retunrs percentage
+#of pvals greater than critical value (0.01)
 def plot_p(sampler, cdf, args, sample_size=50, p_size=1000, test=kstest):
     pval=[]
+    perc=0
     for i in range(p_size):
         sample=sampler(sample_size)
         if type(sample)==tuple:
@@ -76,7 +88,10 @@ def plot_p(sampler, cdf, args, sample_size=50, p_size=1000, test=kstest):
             weights=[]
         p=test(sample, cdf, args, weights)[1]
         pval.append(p)
+        if p>=0.01:
+            perc+=1
     plt.hist(pval, bins=100, density=True)
+    return (perc/p_size) *100
 
 #example
 #plot_p(generate_weighted1, cdf, (2,3), sample_size=50, p_size=1000, test=kstest)

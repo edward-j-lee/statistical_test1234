@@ -4,7 +4,8 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import pymc3 as pm
 from inference import plot_p, CustomError
-from multivariate_test import test_kstest_multivar_norm
+from multivariate_test import test_kstest_multivar_norm, kstest_ndim
+from stat_test import kstest
 
 def import_sample_ndim(name):
     name+='.csv'
@@ -78,7 +79,7 @@ def multivar_norm_inv_wishart(parameters, obs):
     return first_new, second_new, third_new, term4
 
 
-def test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, distribution_name, plot=True, plotp=True):
+def test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, distribution_name, mean_weights=[], var_weights=[], plot=True, plotp=True):
     if distribution_name !='normal_unknown_mu_std':
         raise CustomError('wrong inference problem')
     N=len(posterior_mean)
@@ -96,7 +97,7 @@ def test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, dis
         xpoints_var=np.linspace(min(posterior_var), max(posterior_var), N*10)
         ypoints_var=np.vectorize(exact_var.pdf)(xpoints_var)
         plt.plot(xpoints_var, ypoints_var, color='r', label='exact distribution')
-        plt.hist(posterior_var, bins=100, density=True, color='b', label='estimated distribution')
+        plt.hist(posterior_var, weights=var_weights, bins=100, density=True, color='b', label='estimated distribution')
         plt.legend(loc="upper right")
         plt.title('comparison of estimated and exact posterior distribution of variance')
         plt.show()
@@ -105,15 +106,15 @@ def test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, dis
         ypoints_mean=np.vectorize(exact_mean.pdf)(xpoints_mean)
         #ypoints_mean=np.vectorize(lambda x: stats.norm.pdf(x, loc=mu2, scale=np.sqrt(np.mean(posterior_var)/nu2)))(xpoints_mean)
         plt.plot(xpoints_mean, ypoints_mean, color='r', label='exact distribution')
-        plt.hist(posterior_mean, bins=100, density=True, color='b', label='estimated distribution')
+        plt.hist(posterior_mean, weights=mean_weights, bins=100, density=True, color='b', label='estimated distribution')
         plt.legend(loc="upper right")
         plt.title('comparison of estimated and exact posterior distribution of mean')
         plt.show()
 
-    perc_passed_mean=plot_p(posterior_mean, exact_mean.cdf, plotp=plotp)
-    perc_passed_var=plot_p(posterior_var, exact_var.cdf, plotp=plotp)
+    perc_passed_mean=plot_p(posterior_mean, exact_mean.cdf, weights=mean_weights, plotp=plotp)
+    perc_passed_var=plot_p(posterior_var, exact_var.cdf, weights=var_weights, plotp=plotp)
     print ('returning percentage passed for mean, variance, overall p value for mean, variance in this order')
-    return perc_passed_mean, perc_passed_var, stats.kstest(posterior_mean, exact_mean.cdf)[1], stats.kstest(posterior_var, exact_var.cdf)[1]
+    return perc_passed_mean, perc_passed_var, kstest(posterior_mean, exact_mean.cdf, weights=mean_weights), kstest(posterior_var, exact_var.cdf, weights=var_weights)
 
 obs=[1,1,1,0,1,1,0,0,1,1,1,1]
 
@@ -145,11 +146,11 @@ def test_multivar_norm_known_cov(obs=[], size=2500, mean0=[0,0,0], cov0=np.ident
     newparam=multivar_norm_known_cov(mean0, cov0, cov, obs)
     return test_kstest_multivar_norm(distribution=trace['mean'], mean=newparam[0], cov=newparam[1])
 
-def multivarnorm_unknown_cov(posterior_cov, obs, parameters, mu):
-    n, dim=np.asarray(posterior_cov).shape
-    newparam= multiver_norm_known_mu(*parameters, mu=mu, obs=obs)
-    exact_cov=stats.invwishart.rvs(*newparam, size=n*100)
-    
+def test_cov(posterior_cov, exact_cov, weights):
+    n =len(np.asarray(posterior_cov))
+    dim=len(posterior_cov[0])
+    if dim!=len(np.asarray(exact_cov)[0]):
+        raise CustomError("dimesnion of sample cov and exact (sample) cov does not match")
     Dvals_cov=[]
     for i in dim:
         for j in dim:
@@ -157,8 +158,18 @@ def multivarnorm_unknown_cov(posterior_cov, obs, parameters, mu):
             Dvals_cov.append(d)
     d_cov=max(Dvals_cov)
     p_cov=stats.kstwo.sf(d_cov,n)
-    
+    p_cov=np.clip(p_cov, 0,1)
     return d_cov, p_cov
+
+def multivarnorm_unknown_cov(posterior_cov, obs, parameters, mu, weights=[]):
+    n =len(np.asarray(posterior_cov))
+    newparam= multiver_norm_known_mu(*parameters, mu=mu, obs=obs)
+    exact_cov=stats.invwishart.rvs(*newparam, size=n*100)
+    return test_cov(posterior_cov, exact_cov, weights)
+
+
+
+
 #given parameters, returns samples of multivariate mean and cov
 def multivarnorm_two_unknowns_sample(mu, k, v, phi, size=100):
     if len(phi)!=len(mu):
@@ -175,27 +186,18 @@ def multivarnorm_two_unknowns_sample(mu, k, v, phi, size=100):
 #and estimated posterior distributions, 
 #returns the result of ks test with respect to the exact sample
    
-def compare_NIW_exact_sample(posterior_mean, posterior_var, obs, parameters):
+def compare_NIW_exact_sample(posterior_mean, posterior_var, obs, parameters,mean_weights=[], cov_weights=[]):
     n=len(posterior_mean)
     newparam=multivar_norm_inv_wishart(parameters, obs)
-    exact_mean, exact_cov=multivarnorm_two_unknowns_sample(*newparam, size=n*100)
-    dim=len(np.transpose(exact_mean))
-    Dvals_mean=[]
-    for i in dim:
-       d=stats.kstest(np.transpose(posterior_mean)[i], exact_mean[i])[0]
-       Dvals_mean.append(d)
-    d_mean=max(Dvals_mean)
-    p_mean=stats.kstwo.sf(d_mean, n)
     
-    Dvals_cov=[]
-    for i in dim:
-        for j in dim:
-            d=stats.kstest(posterior_var[:,i,j], exact_cov[:,i,j])[0]
-            Dvals_cov.append(d)
-    d_cov=max(Dvals_cov)
-    p_cov=stats.kstwo.sf(d_cov,n)
-    return p_mean, p_cov
+    if True:
+        exact_mean, exact_cov=multivarnorm_two_unknowns_sample(*newparam, size=n*100)
     
+        d_mean, p_mean= kstest_ndim(posterior_mean, cdfs=exact_mean, weights=mean_weights)
+        
+        d_cov, p_cov = test_cov(posterior_var, exact_cov)
+    
+        return (d_mean, p_mean), (d_cov, p_cov)
     
 class normal_inv_gamma:
     def __init__(self):

@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pymc3 as pm
 import pickle
-from stat_test import reorder, ecdf_x,ecdf_cdf
+from stat_test import kstest, reorder, ecdf_x,ecdf_cdf
 
 class CustomError(Exception):
     pass
@@ -77,24 +77,29 @@ distributions={'beta_bernoulli': beta_bernoulli, 'gamma_poisson':gamma_poisson, 
 dist_func={'beta_bernoulli': stats.beta, 'gamma_poisson': stats.gamma, 'normal_known_var':stats.norm, 'normal_known_mu':stats.invgamma}
 biv_dist=['normal_unknown_mu_std']
 
-def plot_p(posterior, exactsample_or_cdf, plotp=True):
+def plot_p(posterior, exactsample_or_cdf, weights=[], plotp=True):
+    N=len(posterior)
+    posterior=np.asarray(posterior)
+    if len(weights)==0:
+        weights=[1]*N
+    weights=np.asarray(weights)
     if True:
-        N=len(posterior)
         exact=exactsample_or_cdf
         pval=[]
         passed_count=0
         k=N/1000
         if k>=1000:
             print ('more than million sample size')
+            print ('calculating p values with non overalpping sample')
             a=0
-            while a+1000<=N:
-                p=stats.kstest(posterior[a:a+1000], exact)[1]
+            while a+1000<=N:#########here line 94
+                p=kstest(posterior[a:a+1000], exact, weights=weights[a:a+1000])[1]
                 pval.append(p)
                 a+=1000
                 if p>critical_p_val:
                     passed_count+=1
             if a<N:
-                p=stats.kstest(posterior[a:], exact)[1]
+                p=kstest(posterior[a:], exact, weights=weights[a:])[1]
                 pval.append(p)
                 if p>critical_p_val:
                     passed_count+=1
@@ -103,9 +108,14 @@ def plot_p(posterior, exactsample_or_cdf, plotp=True):
                 plt.hist(pval, bins=100, density=True)
                 plt.title('p values of samples divided into non overalapping groups')
         else:
+            print ('sample size is small so calculating p values with overlapping samples')
+            posterior, weights = reorder(posterior, weights)
+            listofindices=np.arange(0,N,1)
             for i in range(1000):
-                partialsample=np.random.choice(posterior, int(N/2))
-                p=stats.kstest(partialsample, exact)[1]
+                partialindices=np.random.choice(listofindices, int(N/2), replace=False)
+                partialsample=posterior[partialindices]
+                partialweights=weights[partialindices]
+                p=kstest(partialsample, cdf=exact, weights=partialweights)[1]
                 pval.append(p)
                 if p>critical_p_val:
                     passed_count+=1
@@ -119,7 +129,7 @@ def plot_p(posterior, exactsample_or_cdf, plotp=True):
             plt.show()    
     return perc_passed
 
-def compare(posterior, obs, parameters, distribution_name, plot=True, plotp=False, factor=10):
+def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=False, factor=10):
     if distribution_name in biv_dist:
         raise CustomError('inference problem must be one dimensional')
     N=len(posterior)
@@ -128,17 +138,18 @@ def compare(posterior, obs, parameters, distribution_name, plot=True, plotp=Fals
     newparam=inf_prob(parameters, obs)
     generator=dist_func[distribution_name].rvs
     exact=generator(*newparam, size=factor*N)
+    weights=[1]*N
     if plot==True:
         points=np.histogram(exact, bins=100, density=True)
-        plt.hist(posterior, bins=100, density=True, color='b', label='estimated posterior')
+        plt.hist(posterior, weights=weights,bins=100, density=True, color='b', label='estimated posterior')
         plt.plot(points[1][:-1], points[0], color='r', label='sample from exact posterior')
         plt.legend(loc="upper right")
         plt.title('comparing estimated posterior with samples drawn from exact distribution')
         plt.show()
-    perc_passed= plot_p(posterior, exact, plotp=plotp)
+    perc_passed= plot_p(posterior, exact, weights=weights, plotp=plotp)
     return perc_passed, stats.kstest(posterior, exact)
 
-def kstest_cdf(posterior, obs, parameters, distribution_name, plot=True, plotp=True):
+def kstest_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=True):
     N=len(posterior)
     newparam=distributions[distribution_name](parameters, obs)
     cdf =lambda x: dist_func[distribution_name].cdf(x, *newparam)
@@ -150,13 +161,13 @@ def kstest_cdf(posterior, obs, parameters, distribution_name, plot=True, plotp=T
         
         #plotting pdf
         plt.plot(xpoints, ypoints, color='r', label='exact pdf')
-        plt.hist(posterior, bins=100, color='b', density=True, label='estimated posterior')
+        plt.hist(posterior, weights=weights, bins=100, color='b', density=True, label='estimated posterior')
         plt.legend(loc="upper right")
         plt.title('comparing estimated posterior with exact pdf')
         plt.show()
         
         #plotting cdf
-        sample1=reorder(posterior)
+        sample1=reorder(posterior, weights)
         res=ecdf_cdf(*sample1, cdf=cdf)
         plt.plot(sample1[0], res[0], color='b', label='empirical cdf')
         plt.plot(sample1[0],res[1], color='r', label='exact cdf' )

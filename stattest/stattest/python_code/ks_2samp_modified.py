@@ -3,11 +3,34 @@ from math import gcd
 import warnings
 from scipy.stats import distributions
 from collections import namedtuple
-from stat_test import reorder, ecdf_x
+
 from scipy.stats.stats import _attempt_exact_2kssamp, _compute_prob_outside_square, _compute_prob_inside_method, _count_paths_outside_method
-import scipy.speical as special
+#import scipy.speical as special
 
 KstestResult = namedtuple('KstestResult', ('statistic', 'pvalue'))
+def reorder(sample, weights=[]):
+    #inputs are np arrays 
+    if len(weights)==0:
+        weights=np.asarray([1]*len(sample))
+    s_w=np.stack((sample, weights), axis=1)
+    s_w=s_w[s_w[:, 0].argsort()]
+    sample=s_w[:,0]
+    weights=s_w[:,1]
+    cond=weights>0
+    return sample[cond], weights[cond]
+
+
+def ecdf_x(x, sample, weights):
+    #sample and weights are assuemd to be reorderd already
+    total=np.sum(weights)
+    ecdfs=np.cumsum(weights)/total
+    if x<sample[0]:
+        return 0
+    if x>=sample[-1]:
+        return 1
+    else:
+        ind=np.where(sample>x)[0][0]-1
+        return ecdfs[ind]
 
 def ks_2samp(data1, weights, data2, alternative='two-sided', mode='auto'):
     if mode not in ['auto', 'exact', 'asymp']:

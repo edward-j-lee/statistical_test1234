@@ -1,8 +1,8 @@
 import numpy as np
 #import pandas as pd
 import matplotlib.pyplot as plt
-from sampling_algorithms.importance import generate_weighted1
-from sampling_algorithms.rejection import sample
+#from .sampling_algorithms.importance import generate_weighted1
+#from .sampling_algorithms.rejection import sample
 import scipy.stats as stats
 from scipy.stats._hypotests import _cdf_cvm
 import ks_2samp_modified
@@ -47,17 +47,16 @@ def kstest(sample, cdf, args=(), weights=[]):
     if callable(cdf):
         sample, weights= reorder(sample, weights)
         ecdfs, cdfs = ecdf_cdf(sample, weights, cdf, args)
-        d=np.abs(np.diff((ecdfs, cdfs))[0])
+        d=np.abs(np.diff((ecdfs, cdfs), axis=0))
         D=np.max(d)
         p=stats.kstwo.sf(D,N)
-        p=np.clip(0,1,p)
         return D, p
     else:
         exact=cdf
         D,p= ks_2samp_modified.ks_2samp(data1=sample, weights=weights, data2=exact)
         return D,p
         
-
+#print (kstest( [0,0,1,1,0,0,1], lambda x: stats.beta.cdf(x, 2,3)))
 
 
 def chisquare(sample, cdf, args=(), bins=100, range_=None, weights=[]):
@@ -175,7 +174,8 @@ def MSE(sample, f, n):
     return res/n
 
 if __name__=='__main__':
-    print ('cramer scipy', stats.cramervonmises(sample, stats.beta.cdf, args=(2,3)))
-    print ('cramer estimated', cramer_rs(sample, stats.beta.cdf, args=(2,3)))
-    print ('cramer new ', cramer2(sample, stats.beta.cdf, (2,3)))
+    pass
+    #print ('cramer scipy', stats.cramervonmises(sample, stats.beta.cdf, args=(2,3)))
+    #print ('cramer estimated', cramer_rs(sample, stats.beta.cdf, args=(2,3)))
+    #print ('cramer new ', cramer2(sample, stats.beta.cdf, (2,3)))
 

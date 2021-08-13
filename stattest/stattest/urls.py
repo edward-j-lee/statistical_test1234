@@ -19,5 +19,5 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('test', views.index)
+    path('beta_bernoulli', views.beta_bernoulli)
 ]

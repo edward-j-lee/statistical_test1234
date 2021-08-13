@@ -1,6 +1,15 @@
 from django import forms
 
-class StatTestForm(forms.Form):
+class BetaBernoulliForm(forms.Form):
+    test_file_posterior = forms.FileField(label="posterior")
+    test_file_obs = forms.FileField(label="observed")
+    test_file_weights = forms.FileField(label="weights", required=False) #optional
+    alpha = forms.IntegerField()
+    beta= forms.IntegerField()
+
+class NormalKnownVarForm(forms.Form):
     test_file = forms.FileField()
-    func = forms.CharField(max_length=100)
-    param = forms.CharField(max_length=100) 
+    prior_mean = forms.IntegerField()
+    prior_std = forms.IntegerField()
+    likelihood_std =forms.IntegerField()
+

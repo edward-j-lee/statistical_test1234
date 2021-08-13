@@ -30,7 +30,7 @@ def beta_bernoulli(parameters, obs):
    beta_new=parameters[1]+n-s
    #stats.beta.rvs(a=alpha_new, b=beta_new, size=factor*N)
    return alpha_new, beta_new
- 
+
 
 def gamma_poisson(parameters, obs):
     s=np.sum(obs)
@@ -42,7 +42,7 @@ def gamma_poisson(parameters, obs):
 
 def normal_known_var(parameters, obs):
     prior_mean,prior_std, likelihood_std=parameters
-    μ0, τ0, τ = prior_mean, 1/prior_std, 1/likelihood_std
+    μ0, τ0, τ = prior_mean, 1/prior_std, 1/(likelihood_std**2)
     n=len(obs)
     τ_new=τ0+n*τ
     x_bar=np.mean(obs)
@@ -125,8 +125,8 @@ def plot_p(posterior, exactsample_or_cdf, weights=[], plotp=True):
                 plt.title('distribution of p value with samples divided into overlapping groups')
         if plotp:
             text=str(perc_passed)+'%'+' of p values has passed'
-            plt.annotate(text, (0.8, 0.9))
-            plt.show()    
+            plt.text(1,1, text, horizontalalignment="center", verticalalignment="center")
+            plt.show()
     return perc_passed
 
 def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=False, factor=10):
@@ -151,9 +151,12 @@ def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True
 
 def kstest_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=True):
     N=len(posterior)
+    print ('comparing with exact cdf')
     newparam=distributions[distribution_name](parameters, obs)
     cdf =lambda x: dist_func[distribution_name].cdf(x, *newparam)
     pdf= lambda x: dist_func[distribution_name].pdf(x, *newparam)
+    if len(weights)==0:
+        weights=[1]*N
     if plot:
         range_=min(posterior), max(posterior)
         xpoints=np.linspace(*range_, N*10)
@@ -177,7 +180,11 @@ def kstest_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=T
     
     perc_passed= plot_p(posterior, cdf, plotp=plotp, weights=weights)
     
-    return perc_passed, kstest(posterior, cdf, weights=weights)
+    ksresult=kstest(posterior, cdf, weights=weights)
+    text='Dstat: '+ str(ksresult[0] )+ " pvalue: " + str(ksresult[1])
+    plt.text(0.2,0.5, text)
+    plt.show()
+    return perc_passed, ksresult
 
 
 sample_size=[1000,5000,10000,50000,100000,500000,1000000]
@@ -186,7 +193,7 @@ overallp=[]
 if __name__=='__main__':
     print ('hello world')
     #obs=import_sample('obs2')
-    posterior=import_sample('posterior2')
+    #posterior=import_sample('posterior2')
     #print (kstest_cdf(posterior, obs=import_sample('obs2'), parameters=(2,3), distribution_name='beta_bernoulli', plot=True, plotp=True))
     #print (compare(posterior, obs, (2,3),'beta_bernoulli', plot=True,plotp=True, factor=100))
     y_obs=[0]*8+[1]*2
@@ -207,7 +214,7 @@ if __name__=='__main__':
     pickle.dump(dictionary, output)
     output.close()
     """
-    
+    """
     k='pymc_posterior_inference_betabernoulli_2_3_with_varying_sample_size'
     file=open(k, 'rb')
     b = pickle.load(file)
@@ -225,5 +232,5 @@ if __name__=='__main__':
     plt.show()
 
 
-    
+    """
         

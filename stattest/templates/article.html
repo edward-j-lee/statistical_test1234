@@ -10,7 +10,7 @@
     </head>
     <body>
 
-    <form action = "/test" method = "post" enctype="multipart/form-data">
+    <form action = "beta_bernoulli" method = "post" enctype="multipart/form-data">
         {% csrf_token %}
         {{form|linebreaks}}
         <input type="submit" value = "send">

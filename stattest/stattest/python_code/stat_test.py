@@ -5,9 +5,20 @@ import matplotlib.pyplot as plt
 #from .sampling_algorithms.rejection import sample
 import scipy.stats as stats
 from scipy.stats._hypotests import _cdf_cvm
-import ks_2samp_modified
+from . import ks_2samp_modified
+import base64
+import io
+
 cdf=stats.beta.cdf
 args=(2,3)
+
+
+def plt_to_base64_encoded_image():
+    io_bytes = io.BytesIO()
+    plt.savefig(io_bytes, format="png")
+    io_bytes.seek(0)
+    plt.clf()
+    return base64.b64encode(io_bytes.read())
 
 def reorder(sample, weights=[]):
     #inputs are np arrays 
@@ -41,7 +52,19 @@ def ecdf_x(x, sample, weights):
         ind=np.where(sample>x)[0][0]-1
         return ecdfs[ind]
 
-
+def all_tests(sample, F, args=(), weights=[]):
+    ksresult=kstest(sample, F.cdf, args, weights)
+    chisqtest=chisquare(sample, F.cdf, args, bins=100, range_=None, weights=weights)
+    cramer=cramer2(sample, F.cdf, args, weights)
+    rsquared, plot2=R_sqaure(sample, F.pdf, weights, plot=True, bins=100)
+    MSE_=MSE(sample, F, 10)
+    totalresult= {'KS test': ksresult,
+    'chi square test': chisqtest,
+    'cramer von mises criteron': cramer,
+    'R squared': rsquared,
+    'Mean Squared Error': MSE_}
+    return totalresult, plot2
+    
 def kstest(sample, cdf, args=(), weights=[]):
     N=len(sample)
     if callable(cdf):
@@ -65,7 +88,12 @@ def chisquare(sample, cdf, args=(), bins=100, range_=None, weights=[]):
         weights=np.asarray([1]*N)
     if range_==None:
         range_=(np.min(sample), np.max(sample))
+    #print ('bins', bins)
+    #print ('range', range_)
+    #print ('sample', sample)
+    #print ('weights', weights)
     t=np.histogram(sample, weights=weights, bins=bins, range=range_)
+    #print ('t', t[:3])
     sam=t[0]
     ran=t[1]
     expected=np.diff(np.vectorize((lambda x: cdf(x, *args)))(ran))*N
@@ -135,7 +163,9 @@ def cramer2(sample, cdf, args=(), weights=[]):
     lastterm=(1/3)*(cdfs[-1]-1)**3
     sigma=np.sum([(cdfs[i+1]-ecdfs[i])**3-(cdfs[i]-ecdfs[i])**3 for i in range(0, N-1)])
     C_n=firstterm+(1/3)*sigma+lastterm
-    return N*C_n
+    w=N*C_n
+    p = max(0, 1. - _cdf_cvm(w, N))
+    return w,p
 
 
 def R_sqaure(sample, pdf, weights=[], bins=0, plot=False):
@@ -143,7 +173,7 @@ def R_sqaure(sample, pdf, weights=[], bins=0, plot=False):
     if len(weights)==0:
         weights=[1]*N
     if bins==0:
-        bins=N/10
+        bins=int(N/10)
     yval, xval=np.histogram(sample, weights=weights, bins=bins, density=True)
     xval=xval[1:]
     ȳ=np.mean(yval)
@@ -158,6 +188,9 @@ def R_sqaure(sample, pdf, weights=[], bins=0, plot=False):
     R_sq=1-(SS_res/SS_tot)
     if plot==True: # plots residual graph
         plt.scatter(xval, es)
+        plt.title('Residual graph for R square')
+        plot = plt_to_base64_encoded_image()
+        return R_sq, plot
     return R_sq
 
 def nmoment(x, n):

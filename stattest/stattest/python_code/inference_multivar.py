@@ -109,7 +109,7 @@ def test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, dis
         plt.legend(loc="upper right")
         plt.title('comparison of estimated and exact posterior distribution of mean')
         plt.show()
-
+        
     perc_passed_mean=plot_p(posterior_mean, exact_mean.cdf, weights=mean_weights, plotp=plotp)
     perc_passed_var=plot_p(posterior_var, exact_var.cdf, weights=var_weights, plotp=plotp)
     print ('returning percentage passed for mean, variance, overall p value for mean, variance in this order')

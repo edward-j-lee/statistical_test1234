@@ -1,3 +1,4 @@
+from math import dist
 import pandas as pd
 import numpy as np
 
@@ -9,8 +10,10 @@ def beta_bernoulli(posterior, obs, parameters):
     posterior=posterior[np.logical_not(np.isnan(posterior))]
 
     obs=pd.read_csv(obs, header=None)
-    obs=obs[np.logical_not(np.isnan(np.asarray(obs).flatten()))]
+    obs=np.asarray(obs).flatten()
+    obs=obs[np.logical_not(np.isnan(obs))]
+    N=len(posterior)
 
-    return kstest(posterior, obs, parameters, 'beta_bernoulli')
+    return test_cdf(posterior, obs, parameters, distribution_name='beta_bernoulli'), benchmark(obs, parameters, 'beta_bernoulli', N=N)
 
-    
+

@@ -6,7 +6,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pymc3 as pm
 import pickle
-from stat_test import kstest, reorder, ecdf_x,ecdf_cdf
+from .stat_test import all_tests, kstest, reorder, ecdf_x,ecdf_cdf, plt_to_base64_encoded_image
+
 
 class CustomError(Exception):
     pass
@@ -22,6 +23,7 @@ class CustomError(Exception):
 #generate nice plots with number of samples changed for diff inf algorithm
 
 critical_p_val=0.01
+
 
 def beta_bernoulli(parameters, obs):
    s=np.sum(obs)
@@ -126,8 +128,8 @@ def plot_p(posterior, exactsample_or_cdf, weights=[], plotp=True):
         if plotp:
             text=str(perc_passed)+'%'+' of p values has passed'
             plt.text(1,1, text, horizontalalignment="center", verticalalignment="center")
-            plt.show()
-    return perc_passed
+            plot = plt_to_base64_encoded_image()
+    return perc_passed, plot
 
 def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=False, factor=10):
     if distribution_name in biv_dist:
@@ -149,12 +151,14 @@ def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True
     perc_passed= plot_p(posterior, exact, weights=weights, plotp=plotp)
     return perc_passed, kstest(posterior, exact, weights=weights)
 
-def kstest_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=True):
+def test_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=True):
+    all_plots = []
     N=len(posterior)
     print ('comparing with exact cdf')
     newparam=distributions[distribution_name](parameters, obs)
-    cdf =lambda x: dist_func[distribution_name].cdf(x, *newparam)
-    pdf= lambda x: dist_func[distribution_name].pdf(x, *newparam)
+    F=dist_func[distribution_name](*newparam)
+    cdf =lambda x: F.cdf(x)
+    pdf= lambda x: F.pdf(x)
     if len(weights)==0:
         weights=[1]*N
     if plot:
@@ -167,8 +171,9 @@ def kstest_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=T
         plt.hist(posterior, weights=weights, bins=100, color='b', density=True, label='estimated posterior')
         plt.legend(loc="upper right")
         plt.title('comparing estimated posterior with exact pdf')
-        plt.show()
+        all_plots.append(plt_to_base64_encoded_image())
         
+
         #plotting cdf
         sample1=reorder(posterior, weights)
         res=ecdf_cdf(*sample1, cdf=cdf)
@@ -176,15 +181,53 @@ def kstest_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=T
         plt.plot(sample1[0],res[1], color='r', label='exact cdf' )
         plt.legend(loc="upper right")
         plt.title('comparing ecdf of estimated posterior with exact cdf')
-        plt.show()
+        all_plots.append(plt_to_base64_encoded_image())
+
+    perc_passed, plot = plot_p(posterior, cdf, plotp=plotp, weights=weights)
+    all_plots.append(plot)
+    test_result, plot2=all_tests(posterior, F, weights=weights)
+    all_plots.append(plot2)
+    #text='Dstat: '+ str(ksresult[0] )+ " pvalue: " + str(ksresult[1])
+    #plt.text(0.2,0.5, text)
     
-    perc_passed= plot_p(posterior, cdf, plotp=plotp, weights=weights)
-    
-    ksresult=kstest(posterior, cdf, weights=weights)
-    text='Dstat: '+ str(ksresult[0] )+ " pvalue: " + str(ksresult[1])
-    plt.text(0.2,0.5, text)
-    plt.show()
-    return perc_passed, ksresult
+    return perc_passed, test_result, all_plots
+
+
+def benchmark(obs, parameters, distribution_name, N):
+    if distribution_name=='beta_bernoulli':
+        a,b=parameters
+        with pm.Model() as model:
+            θ=pm.Beta('θ', alpha=a, beta=b)
+            y=pm.Bernoulli('y', p=θ, observed=obs)
+            trace=pm.sample(N)
+        F=stats.beta(*beta_bernoulli(parameters, obs))
+        return all_tests(trace['θ'], F)[0]
+    if distribution_name=='gamma_poisson':
+        a,b=parameters
+        with pm.Model() as model:
+            θ=pm.Gamma('θ', alpha=a, beta=b)
+            y=pm.Poisson('y', mu=θ, observed=obs)
+            trace=pm.sample(N)
+        F=stats.gamma(*gamma_poisson(parameters, obs))
+        return all_tests(trace['θ'], F)[0]
+    if distribution_name=='normal_known_var':
+        mu0, std0, std=parameters
+        with pm.Model() as model:
+            mean=pm.Normal('mean', mu=mu0, sigma=std0)
+            y=pm.Normal('y', mu=θ, sigma=std, observed=obs)
+            trace=pm.sample(N)
+        F=stats.norm(*normal_known_var(parameters, obs))
+        return all_tests(trace['mean'], F)[0]
+    if distribution_name=='normal_known_mu':
+        a,b, mu=parameters
+        with pm.Model() as model:
+            var=pm.InverseGamma('var', allpha=a, beta=b)
+            y=pm.Normal('y', mu=mu, sigma=np.sqrt(var), observed=obs) ##########not sure
+            trace=pm.sample(N)
+        F=stats.invgamma(*normal_known_mu(parameters, obs))
+        return all_tests(trace['var'], F)[0]
+            
+            
 
 
 sample_size=[1000,5000,10000,50000,100000,500000,1000000]

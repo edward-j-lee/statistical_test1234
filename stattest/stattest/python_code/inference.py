@@ -129,6 +129,8 @@ def plot_p(posterior, exactsample_or_cdf, weights=[], plotp=True):
             text=str(perc_passed)+'%'+' of p values has passed'
             plt.text(1,1, text, horizontalalignment="center", verticalalignment="center")
             plot = plt_to_base64_encoded_image()
+        else:
+            plot=None
     return perc_passed, plot
 
 def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=False, factor=10):
@@ -194,6 +196,7 @@ def test_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=Tru
 
 
 def benchmark(obs, parameters, distribution_name, N):
+    N=int(N/4)
     if distribution_name=='beta_bernoulli':
         a,b=parameters
         with pm.Model() as model:

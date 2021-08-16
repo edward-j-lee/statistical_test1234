@@ -1,8 +1,8 @@
 import scipy.stats as stats
-from stat_test import ecdf_x, reorder, kstest
+from .stat_test import ecdf_x, reorder, kstest
 import numpy as np
 import pandas as pd
-from inference import CustomError
+from .inference import CustomError
 
 def ecdf_x_ndim(x, dist, weights):
     #x is tuple or list, dist and weights are dataframe

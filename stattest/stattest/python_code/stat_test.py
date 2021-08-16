@@ -52,7 +52,7 @@ def ecdf_x(x, sample, weights):
         ind=np.where(sample>x)[0][0]-1
         return ecdfs[ind]
 
-def all_tests(sample, F, args=(), weights=[]):
+def all_tests(sample, F, args=(), weights=[], tup=True):
     ksresult=kstest(sample, F.cdf, args, weights)
     chisqtest=chisquare(sample, F.cdf, args, bins=100, range_=None, weights=weights)
     cramer=cramer2(sample, F.cdf, args, weights)
@@ -63,7 +63,10 @@ def all_tests(sample, F, args=(), weights=[]):
     'cramer von mises criteron': cramer,
     'R squared': rsquared,
     'Mean Squared Error': MSE_}
-    return totalresult, plot2
+    if tup:
+        return totalresult, plot2
+    else:
+        return totalresult
     
 def kstest(sample, cdf, args=(), weights=[]):
     N=len(sample)

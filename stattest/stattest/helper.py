@@ -35,7 +35,7 @@ def two_dimensional_test(post_mean, post_var, mean_w, var_w, obs, parameters):
         var_w=to_1darray(var_w)
     N=len(mean)
 
-    return test_normal_two_unknowns(mean, var, obs, parameters, mean_w, var_w), testing_test_function_normal(N, obs, parameters)
+    return test_normal_two_unknowns(mean, var, obs, parameters, mean_w, var_w, plot=True), testing_test_function_normal(N, obs, parameters)
 
 def multivar_norm_known_cov(posterior, weights, obs, parameters):
     posterior=to_ndarray(posterior)

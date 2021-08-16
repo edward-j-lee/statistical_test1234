@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pymc3 as pm
 from .inference import plot_p, CustomError
 from .multivariate_test import test_kstest_multivar_norm, kstest_ndim
-from stat_test import kstest, plt_to_base64_encoded_image, all_tests
+from .stat_test import kstest, plt_to_base64_encoded_image, all_tests
 
 def import_sample_ndim(name):
     df=pd.read_csv(name, header=None)
@@ -91,6 +91,11 @@ def test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, mea
     exact_mean=stats.norm(loc=mu2, scale=np.sqrt(exact_var.mean()/nu2))
     
     all_plots=[]
+
+    if len(mean_weights)==0:
+        mean_weights=[1]*N
+    if len(var_weights)==0:
+        var_weights=[1]*N
     
     if plot==True:
 
@@ -115,9 +120,9 @@ def test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, mea
     perc_passed_var, p_plot2=plot_p(posterior_var, exact_var.cdf, weights=var_weights, plotp=plot)
     all_plots+=[p_plot1, p_plot2]
     if plot:
-        return perc_passed_mean, perc_passed_var, all_tests(posterior_mean, F=exact_mean, weights=mean_weights), all_tests(posterior_var, F=exact_var, weights=var_weights), all_plots
+        return perc_passed_mean, perc_passed_var, all_tests(posterior_mean, F=exact_mean, weights=mean_weights, tup=False), all_tests(posterior_var, F=exact_var, weights=var_weights, tup=False), all_plots
     else:
-        return perc_passed_mean, perc_passed_var, all_tests(posterior_mean, F=exact_mean, weights=mean_weights), all_tests(posterior_var, F=exact_var, weights=var_weights)
+        return perc_passed_mean, perc_passed_var, all_tests(posterior_mean, F=exact_mean, weights=mean_weights, tup=False), all_tests(posterior_var, F=exact_var, weights=var_weights, tup=False)
 
 obs=[1,1,1,0,1,1,0,0,1,1,1,1]
 

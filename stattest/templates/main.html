@@ -1,0 +1,30 @@
+<!DOCTYPE <!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+    </head>
+    <body>
+    <form action = "" method="POST">
+    {% csrf_token %}
+        <select name="choice">
+        <option value="beta_bernoulli"> beta bernoulli </option>
+        <option value="gamma_poisson">gamma poisson</option>
+
+        <option value="normal_known_var"> normal distribution with known variance </option>
+        <option value="normal_known_mu"> normal distribution with known mean </option>
+        
+        <option value="normal_two_unknowns"> normal distribution with two unknowns (normal-inverse_gamma)</option>
+        <option value="multivar_norm_known_cov"> multivariate normal with known covariance </option>
+        <option value="multivar_norm_known_mu"> multivariate normal distribution with known mean vector </option>
+        <option value="multivar_norm_inv_wishart"> multivariate normal distribution (Normal-inverse-wishart)</option>
+        <input type="submit" value = "submit">
+    </form>
+        <script src="" async defer></script>
+    </body>
+</html>

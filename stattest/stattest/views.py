@@ -1,3 +1,4 @@
+
 from stattest.python_code.inference_multivar import multivarnorm_unknown_cov
 from pandas.core.accessor import delegate_names
 from theano.printing import PatternPrinter
@@ -7,9 +8,18 @@ from django.forms.forms import Form
 from django.http import HttpResponse
 from django.http import HttpRequest
 from .forms import *
-from django.shortcuts import render
+from django.shortcuts import redirect, render, resolve_url
 from . import helper
 import numpy as np
+
+
+
+def main(request):
+    if request.method == "GET":
+        return render(request, "main.html", {})
+    elif request.method == "POST":
+        return redirect("/"+request.POST["choice"])
+
 
 INFERENCE_PROBLEMS = {
     "beta_bernoulli": (BetaBernoulliForm, ["alpha", "beta"], 1),
@@ -27,14 +37,12 @@ def inference_problem(request, problem_type):
 
     form = INFERENCE_PROBLEMS[problem_type][0]
     if request.method == "GET":
-        return render(request, "form.html", {"form" : form()})
+        return render(request, "form.html", {"form" : form(), "problem_type": problem_type})
 
     elif request.method == "POST": 
         form = form(request.POST, request.FILES)
         if not form.is_valid():
             return HttpResponse("Form is not valid")
-
-
 
         if INFERENCE_PROBLEMS[problem_type][2]==1:
             parameters = INFERENCE_PROBLEMS[problem_type][1]
@@ -49,11 +57,11 @@ def inference_problem(request, problem_type):
             all_plots=[i.decode() for i in test_results[2]]
             newdic={}
             for i in test_results[1].keys():
-                newdic[i]=test_results[1][i],benchmark_results[i] 
-            return render(request, "results.html", {"form" : BetaBernoulliForm(), "perc_passed" : test_results[0], "text_results" : newdic, "plots": all_plots})
-                                                                    #betabernoulliiform????
+                newdic[i]=[test_results[1][i], benchmark_results[i]]
+            return render(request, "results.html", { "perc_passed" : test_results[0], "test_results" : newdic, "plots": all_plots})
+                                                                
 
-        elif INFERENCE_PROBLEMS[problem_type][2] == 2: #speical case
+        elif INFERENCE_PROBLEMS[problem_type][2] == 2:
             parameters = INFERENCE_PROBLEMS[problem_type][1]
 
             parameters = [form.cleaned_data[parameter] for parameter in parameters]
@@ -69,10 +77,17 @@ def inference_problem(request, problem_type):
                 var_weights= request.FILES["var_weights"]
             else:
                 var_weights=[]
+
             obs=request.FILES["obs"]
             test_result, benchmark_result=helper.two_dimensional_test(posterior_mean, posterior_var, mean_weights, var_weights, obs, parameters)
             all_plots=[i.decode() for i in test_result[4]]
-            #need fix send plots and result to results.html
+
+            newdic={}
+            newdic['percentage passed']=[test_result[0], benchmark_result[0], test_result[1], benchmark_result[1]]
+            for j in test_result[2]:
+
+                newdic[j]=[test_result[2][j], benchmark_result[2][j], test_result[3][j], benchmark_result[3][j]]
+            return render(request, "results_NIG.html", {"test_result" : newdic, "plots": all_plots})
 
         elif INFERENCE_PROBLEMS[problem_type][2]==3:
             if problem_type=="multivar_norm_known_cov" or problem_type=="multivar_norm_known_mu":

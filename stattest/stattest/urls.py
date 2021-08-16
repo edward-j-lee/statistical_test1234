@@ -19,5 +19,6 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("", views.main),
     path('<str:problem_type>', views.inference_problem)
 ]

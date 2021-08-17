@@ -7,7 +7,7 @@ from .python_code.inference_multivar import test_multivar_norm_known_cov, test_n
 from .python_code.multivariate_test import test_kstest_multivar_norm
 
 def to_1darray(file):
-    res= np.genfromtxt(file, skip_header=0).flatten()
+    res= np.genfromtxt(file, skip_header=0, skip_footer=0).flatten()
     res=res[np.logical_not(np.isnan(res))]
     return res
 def to_ndarray(file):
@@ -46,16 +46,17 @@ def multivar_norm_known_cov(posterior, weights, obs, parameters):
     mean0, cov0, cov= parameters
     newparam= multivar_norm_known_cov(parameters, obs)
     benchmark=test_multivar_norm_known_cov(obs=obs, size=N, mean0=mean0, cov0=cov0, cov=cov)
-    return test_kstest_multivar_norm(posterior, weights, mean=newparam[0], cov=newparam[1]), benchmark
+    res, all_plots =test_kstest_multivar_norm(posterior, weights, mean=newparam[0], cov=newparam[1])
+    return res, benchmark, all_plots
 
 def multivar_norm_known_mu(posterior, weights, obs, parameters):
     posterior=to_ndarray(posterior)
     if weights:
         weights=to_ndarray(weights)
     N=len(posterior)
-    result=multivarnorm_unknown_cov(posterior, obs, parameters, weights)
+    result, plot =multivarnorm_unknown_cov(posterior, obs, parameters, weights)
     # no benchmark
-    return result
+    return result, plot
 
 def multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weights, parameters, obs):
     posterior_mean=to_ndarray(posterior_mean)
@@ -64,5 +65,5 @@ def multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weigh
         mean_weights=to_ndarray(mean_weights)
     if cov_weights:
         cov_weights=to_ndarray(cov_weights)
-    result= compare_NIW_exact_sample(posterior_mean, posterior_cov, obs, parameters, mean_weights, cov_weights)
-    return result
+    result_mean, result_cov, all_plots= compare_NIW_exact_sample(posterior_mean, posterior_cov, obs, parameters, mean_weights, cov_weights)
+    return result_mean, result_cov, all_plots

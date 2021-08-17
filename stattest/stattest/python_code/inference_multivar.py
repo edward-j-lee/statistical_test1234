@@ -4,8 +4,9 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import pymc3 as pm
 from .inference import plot_p, CustomError
-from .multivariate_test import test_kstest_multivar_norm, kstest_ndim
+from .multivariate_test import test_kstest_multivar_norm, multivar_kstest2
 from .stat_test import kstest, plt_to_base64_encoded_image, all_tests
+from scipy.stats.stats import KstestResult
 
 def import_sample_ndim(name):
     df=pd.read_csv(name, header=None)
@@ -152,7 +153,7 @@ def test_multivar_norm_known_cov(obs=[], size=2500, mean0=[0,0,0], cov0=np.ident
         likelihood=pm.MvNormal('y', mu=mean, cov=np.multiply(1/N,cov), observed=obs)
         trace=pm.sample(int(size/4))
     newparam=multivar_norm_known_cov(mean0, cov0, cov, obs)
-    return test_kstest_multivar_norm(distribution=trace['mean'], mean=newparam[0], cov=newparam[1])
+    return test_kstest_multivar_norm(distribution=trace['mean'], mean=newparam[0], cov=newparam[1], allplots=False)
 
 def test_cov(posterior_cov, exact_cov, weights):
     n =len(np.asarray(posterior_cov))
@@ -160,14 +161,22 @@ def test_cov(posterior_cov, exact_cov, weights):
     if dim!=len(np.asarray(exact_cov)[0]):
         raise CustomError("dimesnion of sample cov and exact (sample) cov does not match")
     Dvals_cov=[]
+    pvals_cov=[]
     for i in dim:
         for j in dim:
             d=stats.kstest(posterior_cov[:,i,j], exact_cov[:,i,j])[0]
+            p=stats.kstwo.sf(d, n)
             Dvals_cov.append(d)
+            pvals_cov.append(p)
     d_cov=max(Dvals_cov)
     p_cov=stats.kstwo.sf(d_cov,n)
     p_cov=np.clip(p_cov, 0,1)
-    return d_cov, p_cov
+    
+    plt.plt(pvals_cov)
+    plt.title("p values accross each dimension of the covariance")
+    pplot_cov=plt_to_base64_encoded_image()
+    
+    return KstestResult(d_cov, p_cov), pplot_cov
 
 def multivarnorm_unknown_cov(posterior_cov, obs, parameters, weights=[]):
     n =len(np.asarray(posterior_cov))
@@ -205,12 +214,11 @@ def compare_NIW_exact_sample(posterior_mean, posterior_cov, obs, parameters,mean
     if True:
         exact_mean, exact_cov=multivarnorm_two_unknowns_sample(*newparam, size=n*100)
     
-        d_mean, p_mean= kstest_ndim(posterior_mean, cdfs=exact_mean, weights=mean_weights)
+        ks_mean, pplot_mean= multivar_kstest2(posterior_mean, cdfs=exact_mean, weights=mean_weights, allplots=True, title="mean")
         
-        d_cov, p_cov = test_cov(posterior_cov, exact_cov)
+        ks_cov, pplot_cov = test_cov(posterior_cov, exact_cov)
     
-        return {'ks test for mean': (d_mean, p_mean), 
-                'ks test for covariance': (d_cov, p_cov)}
+        return ks_mean, ks_cov, [pplot_mean, pplot_cov]
 
 if __name__=='__main__':
     #pass

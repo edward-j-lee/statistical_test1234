@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+        <style>
+            table, th, td {
+                padding: 10px,
+                border: 1px, solid, black;
+                border-collapse: collapse;
+            }
+        </style>
+
+    </head>
+    <body>
+    <h1 style="align:center">RESULTS</h1>
+
+    <table>
+    <tr>
+    <th>test</th>
+    <th>user's inference</th>
+    <th>benchmark inference</th>
+    </tr>
+    {% for label, values in test_result.items%}
+    <tr>
+        <td>{{label}}</td>
+        {% for item in values%}
+            <td>{{item}}</td>
+        {% endfor%}
+    </tr>
+    {% endfor%}
+    </table>
+
+    <h1>Plots</h1>
+    {% for image in plots %}
+    <img align="left" src="data:image/png;base64, {{image}}" alt = "{{image}}">
+    {% endfor %}
+
+    </body>
+</html>

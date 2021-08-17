@@ -101,13 +101,21 @@ def inference_problem(request, problem_type):
                     prior_mean=request.FILES["prior_mean"]
                     prior_cov=request.FILES["prior_cov"]
                     likelihood_cov=request.FILES["likelihood_cov"]
-
+                    print ('b', prior_mean)
                     prior_mean=helper.to_1darray(prior_mean)
                     prior_cov=helper.to_ndarray(prior_cov)
                     likelihood_cov=helper.to_ndarray(likelihood_cov)
+                    print (prior_mean)
 
                     parameters=prior_mean, prior_cov, likelihood_cov
-                    result, benchmark_result= helper.multivar_norm_known_cov(posterior, weights, obs, parameters)
+                    result, benchmark_result, all_plots = helper.multivar_norm_known_cov(posterior, weights, obs, parameters)
+                    all_plots=[i.decode() for i in all_plots]
+                    newdic={}
+                    newdic["percentage of p passed in multivariate KS test v.1"] = [result[0], benchmark_result[0]] 
+                    newdic["KS test 1"] = [result[1], benchmark_result[1]]
+                    newdic["KS test 2"] = [result[2], benchmark_result[2]]
+            
+                    return render(request, "multivar1.html", {"test_result": newdic, "plots":all_plots})
                 elif problem_type=="multivar_norm_known_mu":
                     nu = INFERENCE_PROBLEMS[problem_type][1][0]
                     nu = form.cleaned_data[nu]
@@ -118,7 +126,9 @@ def inference_problem(request, problem_type):
                     likelihood_mu=request.FILES["likelihood_mu"]
                     likelihood_mu=helper.to_ndarray(likelihood_mu)
                     parameters= nu, psi, likelihood_mu
-                    result=helper.multivar_norm_known_mu(posterior, weights, obs, parameters)
+                    result, all_plots =helper.multivar_norm_known_mu(posterior, weights, obs, parameters)
+                    all_plots=[i.decode() for i in all_plots]
+                    return render(request, "multivar2.html", {"result": result, "plots":all_plots})
 
                 elif problem_type=="multivar_norm_inv_wishart":
                     posterior_mean = request.FILES["posterior_mean"]
@@ -149,10 +159,19 @@ def inference_problem(request, problem_type):
 
                     parameters=prior_mu, kappa, nu, psi
 
-                    result=helper.multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weights, parameters, obs)
+                    result_mean, result_cov, all_plots=helper.multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weights, parameters, obs)
+                    all_plots=[i.decode() for i in all_plots]
+                    ### fix
+                    return render(request, "multivar3.html", {"result1": result_mean, "result2": result_cov, "plots":all_plots})
+
+def blackbox(request):
+    if request.method == "GET":
+        return render(request, "blackbox.html", {"form": BlackboxInference(),"problem_type": "blackbox"})
+    elif request.method == "POST":
+        posterior1=request.FILES['sample1']
 
 
-                
+        return HttpResponse("done")     
 
 
 

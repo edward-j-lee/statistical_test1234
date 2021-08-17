@@ -70,3 +70,13 @@ class MultiVarNormTwoUnknowns(forms.Form):
     kappa = forms.IntegerField(label="κ")
     nu=forms.IntegerField(label="ν (degree of freedom)")
     psi=forms.IntegerField(label="Ψ (scale matrix)")
+
+class BlackboxInference(forms.Form):
+    sample1=forms.FileField(label="sample for problem 1")
+    weights1=forms.FileField(label="weights for problem 1", required=False)
+    sample2=forms.FileField(label="sample for problem 2")
+    weights2=forms.FileField(label="weights for problem 2", required=False)
+    sample3=forms.FileField(label="sample for problem 3")
+    weights3=forms.FileField(label="weights for problem 3", required=False)
+    sample4=forms.FileField(label="sample for problem 4")
+    weights4=forms.FileField(label="weights for problem 4", required=False)

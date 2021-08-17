@@ -10,8 +10,7 @@
     </head>
     <body>
 
-
-    <form action = "{{problem_type}}" method = "post" enctype="multipart/form-data">
+    <form action = "blackbox" method = "post" enctype="multipart/form-data">
         {% csrf_token %}
         {{form|linebreaks}}
         <input type="submit" value = "send">

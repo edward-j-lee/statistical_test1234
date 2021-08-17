@@ -217,7 +217,7 @@ def benchmark(obs, parameters, distribution_name, N):
         mu0, std0, std=parameters
         with pm.Model() as model:
             mean=pm.Normal('mean', mu=mu0, sigma=std0)
-            y=pm.Normal('y', mu=θ, sigma=std, observed=obs)
+            y=pm.Normal('y', mu=mean, sigma=std, observed=obs)
             trace=pm.sample(N)
         F=stats.norm(*normal_known_var(parameters, obs))
         return all_tests(trace['mean'], F)[0]

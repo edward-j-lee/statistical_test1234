@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 #from .sampling_algorithms.rejection import sample
 import scipy.stats as stats
 from scipy.stats._hypotests import _cdf_cvm
+from scipy.stats.stats import KstestResult
 from . import ks_2samp_modified
 import base64
 import io
@@ -68,6 +69,8 @@ def all_tests(sample, F, args=(), weights=[], tup=True):
     else:
         return totalresult
     
+stats.kstest
+
 def kstest(sample, cdf, args=(), weights=[]):
     N=len(sample)
     if callable(cdf):
@@ -76,11 +79,11 @@ def kstest(sample, cdf, args=(), weights=[]):
         d=np.abs(np.diff((ecdfs, cdfs), axis=0))
         D=np.max(d)
         p=stats.kstwo.sf(D,N)
-        return D, p
+        return KstestResult(D, p)
     else:
         exact=cdf
         D,p= ks_2samp_modified.ks_2samp(data1=sample, weights=weights, data2=exact)
-        return D,p
+        return KstestResult(D,p)
         
 #print (kstest( [0,0,1,1,0,0,1], lambda x: stats.beta.cdf(x, 2,3)))
 
@@ -91,17 +94,11 @@ def chisquare(sample, cdf, args=(), bins=100, range_=None, weights=[]):
         weights=np.asarray([1]*N)
     if range_==None:
         range_=(np.min(sample), np.max(sample))
-    #print ('bins', bins)
-    #print ('range', range_)
-    #print ('sample', sample)
-    #print ('weights', weights)
     t=np.histogram(sample, weights=weights, bins=bins, range=range_)
-    #print ('t', t[:3])
     sam=t[0]
     ran=t[1]
     expected=np.diff(np.vectorize((lambda x: cdf(x, *args)))(ran))*N
     #cisqstat=(expected-sam)**2/expected
-    #print (len(sam), len(expected))
     return (stats.chisquare(sam, expected))
 
 

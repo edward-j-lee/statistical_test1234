@@ -22,7 +22,9 @@ def plt_to_base64_encoded_image():
     return base64.b64encode(io_bytes.read())
 
 def reorder(sample, weights=[]):
-    #inputs are np arrays 
+    #inputs are np arrays
+    print ('hello')
+    print ('samples: ', sample, 'weights: ', weights) 
     if len(weights)==0:
         weights=np.asarray([1]*len(sample))
     s_w=np.stack((sample, weights), axis=1)
@@ -69,7 +71,7 @@ def all_tests(sample, F, args=(), weights=[], tup=True):
     else:
         return totalresult
     
-stats.kstest
+
 
 def kstest(sample, cdf, args=(), weights=[]):
     N=len(sample)

@@ -22,7 +22,7 @@ def kstest_ndim(samples, cdfs, args):
     
     for i, j, k in zip(samples, cdfs, args):
         d, p= stats.kstest(i,j, args=k)
-        Dstats.append(d)
+        Dstat.append(d)
         pval.append(p)
     pval=np.sort(pval)
     pval[0]=pval[0]*dim

@@ -1,10 +1,13 @@
 from math import dist
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from .python_code.inference import *
 from .python_code.inference_multivar import test_multivar_norm_known_cov, test_normal_two_unknowns, testing_test_function_normal, multivar_norm_known_cov, multivarnorm_unknown_cov, compare_NIW_exact_sample
 from .python_code.multivariate_test import test_kstest_multivar_norm
+from .python_code.stat_test import kstest, plt_to_base64_encoded_image
+
 
 def to_1darray(file):
     res= np.genfromtxt(file, skip_header=0, skip_footer=0).flatten()
@@ -56,7 +59,7 @@ def multivar_norm_known_mu(posterior, weights, obs, parameters):
     N=len(posterior)
     result, plot =multivarnorm_unknown_cov(posterior, obs, parameters, weights)
     # no benchmark
-    return result, plot
+    return result, [plot]
 
 def multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weights, parameters, obs):
     posterior_mean=to_ndarray(posterior_mean)
@@ -67,3 +70,37 @@ def multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weigh
         cov_weights=to_ndarray(cov_weights)
     result_mean, result_cov, all_plots= compare_NIW_exact_sample(posterior_mean, posterior_cov, obs, parameters, mean_weights, cov_weights)
     return result_mean, result_cov, all_plots
+
+
+obs=[[1], [10], [0,-1,1,-0.5,0.8,1.4,2], stats.norm.rvs(size=100, loc=0, scale=2)]
+def benchmark_problems(list_posteriors, list_weights, times, param=(0,1,1)):
+    newdic={}
+    for i, (posterior, weights, t) in enumerate(zip(list_posteriors, list_weights, times)):
+        i+=1
+        post=to_1darray(posterior)
+        N=len(post)
+        if weights:
+            weights=to_1darray(weights)
+        else:
+            pass
+        #newdic[i]=(post, weights)
+
+        newparam=normal_known_var(param, obs[i])
+        exact=stats.norm(*newparam)
+        ks=kstest(post, exact.cdf, weights=weights)
+        perc, N= plot_p(post, exact.cdf, weights=weights, plotp=False)
+
+        xs=np.linspace(min(post), max(post),10*N )
+        ys=np.vectorize(exact.pdf)(xs)
+        
+        plt.plot(xs, ys, label='exact distribution', color='r')
+        
+        if len(weights)==0:
+            plt.hist(post, density=True, label='user estimated', color='b')
+        else:
+            plt.hist(post, weights=weights, density=True, label='user estimated', color='b')
+        plt.title('problem '+str(i))
+        plt.legend()
+        newdic["problem_"+str(i)]=[perc, ks,t],  plt_to_base64_encoded_image()
+
+    return newdic

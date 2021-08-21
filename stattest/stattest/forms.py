@@ -74,9 +74,14 @@ class MultiVarNormTwoUnknowns(forms.Form):
 class BlackboxInference(forms.Form):
     sample1=forms.FileField(label="sample for problem 1")
     weights1=forms.FileField(label="weights for problem 1", required=False)
+    time1=forms.forms.FloatField(label="time taken for problem 1", required=False)
     sample2=forms.FileField(label="sample for problem 2")
     weights2=forms.FileField(label="weights for problem 2", required=False)
+    time2=forms.forms.FloatField(label="time taken for problem 2", required=False)
     sample3=forms.FileField(label="sample for problem 3")
     weights3=forms.FileField(label="weights for problem 3", required=False)
+    time3=forms.forms.FloatField(label="time taken for problem 3", required=False)
     sample4=forms.FileField(label="sample for problem 4")
     weights4=forms.FileField(label="weights for problem 4", required=False)
+    time4=forms.forms.FloatField(label="time taken for problem 4", required=False)
+

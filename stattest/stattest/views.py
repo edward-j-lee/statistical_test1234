@@ -168,10 +168,39 @@ def blackbox(request):
     if request.method == "GET":
         return render(request, "blackbox.html", {"form": BlackboxInference(),"problem_type": "blackbox"})
     elif request.method == "POST":
+        form = BlackboxInference(request.POST, request.FILES)
         posterior1=request.FILES['sample1']
+        posterior2=request.FILES['sample2']
+        posterior3=request.FILES['sample3']
+        posterior4=request.FILES['sample4']
 
 
-        return HttpResponse("done")     
+        if "weights1" in request.FILES:
+            weights1=request.FILES['weights1']
+        else:
+            weights1=[]
+        if "weights2" in request.FILES:
+            weights2=request.FILES['weights2']
+        else:
+            weights2=[]
+        if "weights3" in request.FILES:
+            weights3=request.FILES['weights3']
+        else:
+            weights3=[]
+        if "weights4" in request.FILES:
+            weights4=request.FILES['weights4']
+        else:
+            weights4=[]
+
+        
+        times=[0,0,0,0]
+        res=helper.benchmark_problems([posterior1, posterior2, posterior3, posterior4],[weights1, weights2, weights3, weights4], times)
+        plots = [res[i][1] for i in res]
+
+        for i in res:
+            res[i] = res[i][0]
+        res["plots"] = plots
+        return render(request, "blackbox_result.html", res)     
 
 
 

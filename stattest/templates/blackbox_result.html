@@ -7,28 +7,24 @@
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="">
-                <style>
-            table, th, td {
-                padding: 10px,
-                border: 1px, solid, black;
-                border-collapse: collapse;
-            }
-        </style>
     </head>
     <body>
-    <h1 style="align:center">RESULTS</h1>
 
-    <p><strong>{{perc_passed}}%</strong> of the samples has passed the KS test</p>
     
+    <h1 style="align:center">RESULTS</h1>
     <table>
     <tr>
-    <th></th>
+    <th>Problem</th>
+    <th>Problem</th>
+    <th>sample estimated by benchmark inference algorithm</th>
     <th>sample estimated by the user</th>
-      <th>sample estimated by benchmark inference algorithm</th>
-      </tr>
-    {% for label, values in test_results.items%}
+    <th>sample estimated by benchmark inference algorithm</th>
+    <th>sample estimated by the user</th>
+    <th>sample estimated by benchmark inference algorithm</th>  
+    </tr>
+    {% for label, values in .items%}
     <tr>
-        <td>{{label}}</td>
+        <td>{{label}}</td>results
         {% for item in values%}
             <td>{{item}}</td>
         {% endfor%}
@@ -41,6 +37,7 @@
     {% for image in plots %}
     <img align="left" src="data:image/png;base64, {{image}}" alt = "{{image}}">
     {% endfor %}
+
 
     </body>
 </html>

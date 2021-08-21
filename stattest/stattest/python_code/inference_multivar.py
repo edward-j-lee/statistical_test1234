@@ -220,6 +220,9 @@ def compare_NIW_exact_sample(posterior_mean, posterior_cov, obs, parameters,mean
     
         return ks_mean, ks_cov, [pplot_mean, pplot_cov]
 
+stats.cramervonmises
+
+
 if __name__=='__main__':
     #pass
     #testing normal with two unknown

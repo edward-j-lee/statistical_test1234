@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import pymc3 as pm
 import pickle
 from .stat_test import all_tests, kstest, reorder, ecdf_x,ecdf_cdf, plt_to_base64_encoded_image
+from .sampling_algorithms.importance import imp_sampling_w
+from .sampling_algorithms.MCMC import MCMC_sampling_inf
+from .sampling_algorithms.rejection import acc_rej_samp, supx
 
 
 class CustomError(Exception):
@@ -75,9 +78,13 @@ def import_sample(name):
 
 
 distributions={'beta_bernoulli': beta_bernoulli, 'gamma_poisson':gamma_poisson, 'normal_known_var':normal_known_var, 'normal_known_mu':normal_known_mu,}
+prior_likelihood={'normal_known_mu': (stats.invgamma, stats.norm), 'normal_known_var':(stats.norm, stats.norm), 'gamma_poisson': (stats.gamma, stats.poisson), 'beta_bernoulli': (stats.beta, stats.bernoulli)}
 
-dist_func={'beta_bernoulli': stats.beta, 'gamma_poisson': stats.gamma, 'normal_known_var':stats.norm, 'normal_known_mu':stats.invgamma}
-biv_dist=['normal_unknown_mu_std']
+dist_func={}
+for i in prior_likelihood: 
+    dist_func[i]=prior_likelihood[i][0]
+
+
 
 def plot_p(posterior, exactsample_or_cdf, weights=[], plotp=True):
     N=len(posterior)
@@ -134,8 +141,7 @@ def plot_p(posterior, exactsample_or_cdf, weights=[], plotp=True):
     return perc_passed, plot
 
 def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=False, factor=10):
-    if distribution_name in biv_dist:
-        raise CustomError('inference problem must be one dimensional')
+
     N=len(posterior)
     inf_prob=distributions[distribution_name]
     print ('generating exact sample', factor*N)
@@ -195,6 +201,7 @@ def test_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=Tru
     return perc_passed, test_result, all_plots
 
 
+
 def benchmark(obs, parameters, distribution_name, N):
     N=int(N/4)
     if distribution_name=='beta_bernoulli':
@@ -229,8 +236,48 @@ def benchmark(obs, parameters, distribution_name, N):
             trace=pm.sample(N)
         F=stats.invgamma(*normal_known_mu(parameters, obs))
         return all_tests(trace['var'], F)[0]
-            
-            
+
+
+def benchmark2(obs, parameters, distribution_name, N, inference):
+    prior, likelihood=prior_likelihood(distribution_name)
+    #seperates the prior parameters from likelihood parameters
+    def sep_param(param, name):
+        if name=='normal_known_var' or name=='normal_known_mu':
+            return [param[0], param[1]], [param[-1]]
+        else:
+            return param, []
+    prior_param, likeli_param = sep_param(parameters, distribution_name)
+    def Likelihood(x):
+        return np.prod(likelihood.pdf(obs, x, *likeli_param)) * prior.pdf(x)
+    prior_samp=lambda x: prior.cdf(size=x, *prior_param)
+    prior_pdf=lambda x: prior.pdf(x, *prior_param)
+
+    newparam=distributions[distribution_name](parameters, obs)
+
+    F=prior(*newparam)
+
+    if inference=='rejection':
+        if distribution_name=='beta_bernoulli':
+            X=supx(func=Likelihood, xrange=(0,1)) #since in beta bernoulli x is between 0 and 1
+        else:
+            X=supx(func=Likelihood) #for all other distributions, range is -20, 20
+        res=acc_rej_samp(func=Likelihood, g_pdf=prior_pdf, g_samp=prior_samp, supX=X, N=N)
+        return all_tests(res, F)[0]
+    elif inference=='importance':
+        res=imp_sampling_w(Likelihood, N, prior_samp, prior_pdf)
+        return all_tests(res[0], F, weights=res[1])[0]
+    elif inference=='MCMC':
+        res=MCMC_sampling_inf(Likelihood, size=N)
+        return all_tests(res, F)[0]
+
+def any_benchmark(obs, parameters, distribution_name, N, algorithm):
+    if algorithm=='pymc3':
+        return benchmark(obs, parameters, distribution_name, N)
+    else:
+        return benchmark2(obs, parameters, distribution_name, N, inference=algorithm)
+     
+        
+        
 
 
 sample_size=[1000,5000,10000,50000,100000,500000,1000000]

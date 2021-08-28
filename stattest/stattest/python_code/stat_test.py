@@ -23,8 +23,6 @@ def plt_to_base64_encoded_image():
 
 def reorder(sample, weights=[]):
     #inputs are np arrays
-    print ('hello')
-    print ('samples: ', sample, 'weights: ', weights) 
     if len(weights)==0:
         weights=np.asarray([1]*len(sample))
     s_w=np.stack((sample, weights), axis=1)
@@ -106,7 +104,7 @@ def chisquare(sample, cdf, args=(), bins=100, range_=None, weights=[]):
 
 #plots p values given a sampling algorithm and retunrs percentage
 #of pvals greater than critical value (0.01)
-def plot_p(sampler, cdf, args, sample_size=50, p_size=1000, test=kstest):
+def plot_p_from_sampling_algo(sampler, cdf, args, sample_size=50, p_size=1000, test=kstest):
     pval=[]
     perc=0
     for i in range(p_size):
@@ -123,7 +121,7 @@ def plot_p(sampler, cdf, args, sample_size=50, p_size=1000, test=kstest):
     return (perc/p_size) *100
 
 #example
-#plot_p(generate_weighted1, cdf, (2,3), sample_size=50, p_size=1000, test=kstest)
+#plot_p_from_sampling_algo(generate_weighted1, cdf, (2,3), sample_size=50, p_size=1000, test=kstest)
 
 
 #https://towardsdatascience.com/integrals-are-fun-illustrated-riemann-stieltjes-integral-b71a6e003072

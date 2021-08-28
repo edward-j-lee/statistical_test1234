@@ -118,10 +118,11 @@ def multivar_kstest2(samples, cdfs, weights=[], allplots=True, title=None):
         else:
             plotp_each_dim=None
         
-        pval[0]=pval[0]*dim
+
         D=np.max(Dstats)
         p_=stats.kstwo.sf(D, N)
         p_ = np.clip(p_, 0, 1)
+        
         return KstestResult( D,p_*dim), plotp_each_dim
     else:
         for i, j, w in zip(np.transpose(samples), cdfs, np.transpose(weights)):

@@ -11,7 +11,8 @@ from scipy.stats.stats import KstestResult
 def import_sample_ndim(name):
     df=pd.read_csv(name, header=None)
     return np.asarray(df)
-#1
+#1 univariate normal with unknown mean and std
+# prior: normal (mean), inverse gamma (var), likelihood: normal
 def normal_unknown_mu_std(parameters, obs):
     mu0, nu, alpha, beta= parameters
     n=len(obs)
@@ -22,7 +23,8 @@ def normal_unknown_mu_std(parameters, obs):
     beta_new=beta+(1/2)*np.sum([(xi-x_bar)**2 for xi in obs])+((n*nu)/(nu+n))*((x_bar-mu0)**2/2)
     return mu_new, nu_new, alpha_new, beta_new
 
-#2
+#2 Normal with known cov
+#prior: normal , liikelihood: normal
 def multivar_norm_known_cov(parameters, obs):
     mu0, cov0, cov= parameters
     n=len(obs)
@@ -40,11 +42,10 @@ def multivar_norm_known_cov(parameters, obs):
     
     return mean_new, cov_new
 
-multivar_dist={'multivar_norm_known_cov':multivar_norm_known_cov}
 
 #3
 #multivarite normal with known mean vector and unknown cov
-#inverse Wishart
+#prior: inverse Wishart, likelihood: multivariate normal
 def multivar_norm_known_mu(parameters, obs):
     v, psi, mu= parameters
     n=len(obs)
@@ -59,7 +60,8 @@ def multivar_norm_known_mu(parameters, obs):
     
     return v_new, psi_new
 
-#4
+#4 multivariate norm with unknwon mean and cov
+# prior: multivariate normal (mean), inverse wishart (cov), likelihood (normal)
 def multivar_norm_inv_wishart(parameters, obs):
     x1, x2, x3, x4 = parameters
     xbar=np.mean(obs, axis=0)

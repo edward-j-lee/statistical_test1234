@@ -193,8 +193,7 @@ def blackbox(request):
             weights4=[]
 
         
-        times=[0,0,0,0]
-        res=helper.benchmark_problems([posterior1, posterior2, posterior3, posterior4],[weights1, weights2, weights3, weights4], times)
+        res=helper.benchmark_problems([posterior1, posterior2, posterior3, posterior4],[weights1, weights2, weights3, weights4])
         plots = [res[i][1] for i in res]
 
         for i in res:

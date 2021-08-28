@@ -17,7 +17,7 @@ def to_ndarray(file):
     res=pd.read_csv(file, header=None)
     return np.asarray(res)
 
-def one_dimensional_test(posterior, obs, parameters, dist_name, weights=None):
+def one_dimensional_test(posterior, obs, parameters, dist_name, weights=None, algorithm_name='pymc3'):
     posterior=to_1darray(posterior) 
     obs = to_1darray(obs)
     N=len(posterior)
@@ -26,7 +26,7 @@ def one_dimensional_test(posterior, obs, parameters, dist_name, weights=None):
     except:
         weights=[]
     
-    return test_cdf(posterior, obs, parameters, weights=weights, distribution_name=dist_name), benchmark(obs, parameters, dist_name, N=N)
+    return test_cdf(posterior, obs, parameters, weights=weights, distribution_name=dist_name), any_benchmark(obs, parameters, dist_name, N=N, algorithm=algorithm_name)
 
 def two_dimensional_test(post_mean, post_var, mean_w, var_w, obs, parameters):
     mean=to_1darray(post_mean)
@@ -73,9 +73,9 @@ def multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weigh
 
 
 obs=[[1], [10], [0,-1,1,-0.5,0.8,1.4,2], stats.norm.rvs(size=100, loc=0, scale=2)]
-def benchmark_problems(list_posteriors, list_weights, times, param=(0,1,1)):
+def benchmark_problems(list_posteriors, list_weights,  param=(0,1,1)):
     newdic={}
-    for i, (posterior, weights, t) in enumerate(zip(list_posteriors, list_weights, times)):
+    for i, (posterior, weights) in enumerate(zip(list_posteriors, list_weights)):
         i+=1
         post=to_1darray(posterior)
         N=len(post)
@@ -101,6 +101,6 @@ def benchmark_problems(list_posteriors, list_weights, times, param=(0,1,1)):
             plt.hist(post, weights=weights, density=True, label='user estimated', color='b')
         plt.title('problem '+str(i))
         plt.legend()
-        newdic["problem_"+str(i)]=[perc, ks,t],  plt_to_base64_encoded_image()
+        newdic["problem_"+str(i)]=[perc, ks],  plt_to_base64_encoded_image()
 
     return newdic

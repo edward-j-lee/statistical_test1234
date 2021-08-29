@@ -1,5 +1,6 @@
 from django import forms
 from django.forms import ModelForm
+#the forms for receiving file and parameters from user
 
 Choices=(('pymc3', 'pymc3 (NUTS)'), ('rejection','accept-reject sampling'), ('importance', 'importance sampling'), ('mcmc', 'mcmc sampling'))
 

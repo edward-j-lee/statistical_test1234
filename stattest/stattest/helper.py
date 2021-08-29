@@ -24,6 +24,7 @@ def to_nbyn_matrix(file,n):
     res=np.genfromtxt(file, delimiter=',', skip_header=0)
     return np.asarray([r.reshpae(n,n) for r in res])
 
+#performs set of tests for one dimensional problem 
 def one_dimensional_test(posterior, obs, parameters, dist_name, weights=None, algorithm_name='pymc3'):
     posterior=to_1darray(posterior) 
     obs = to_1darray(obs)
@@ -35,6 +36,7 @@ def one_dimensional_test(posterior, obs, parameters, dist_name, weights=None, al
     
     return test_cdf(posterior, obs, parameters, weights=weights, distribution_name=dist_name), any_benchmark(obs, parameters, dist_name, N=N, algorithm=algorithm_name)
 
+#performs ks test on normal inference problem with two unknowns
 def two_dimensional_test(post_mean, post_var, mean_w, var_w, obs, parameters):
     mean=to_1darray(post_mean)
     var=to_1darray(post_var)
@@ -47,6 +49,7 @@ def two_dimensional_test(post_mean, post_var, mean_w, var_w, obs, parameters):
 
     return test_normal_two_unknowns(mean, var, obs, parameters, mean_w, var_w, plot=True), testing_test_function_normal(N, obs, parameters)
 
+#performs test with the benchmark on multivaraite normal with known cov
 def multivar_norm_known_cov(posterior, weights, obs, parameters):
     posterior=to_ndarray(posterior)
     obs=to_ndarray(obs)
@@ -59,6 +62,7 @@ def multivar_norm_known_cov(posterior, weights, obs, parameters):
     res, all_plots =test_kstest_multivar_norm(posterior, weights, mean=newparam[0], cov=newparam[1])
     return res, benchmark, all_plots
 
+#performs ks test on multivar normal inference problem with known mu
 def multivar_norm_known_mu(posterior, weights, obs, parameters,n):
     posterior=to_nbyn_matrix(posterior, n)
     if weights:
@@ -101,6 +105,7 @@ beta_param_obs=[([1,12.55], [0]), ([1,12.55], [0.99]), ([1,1], [0]) ]
 #list of all problems in ([parameters], [obs]) form
 all_problem_list= all_param_obs_norm+beta_param_obs
 
+#runs the set of samples and weights on appropriate kstest
 def benchmark_problems(list_posteriors, list_weights):
     newdic={}
     for i, (posterior, weights, param_obs) in enumerate(zip(list_posteriors, list_weights, all_problem_list)):
@@ -111,7 +116,7 @@ def benchmark_problems(list_posteriors, list_weights):
             weights=to_1darray(weights)
         else:
             pass
-        #newdic[i]=(post, weights)
+
         
         param=param_obs[0]
         observed=param_obs[-1]

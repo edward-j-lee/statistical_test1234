@@ -3,7 +3,7 @@ import pandas as pd
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 import pymc3 as pm
-from .inference import plot_p, CustomError
+from .inference import plot_p, CustomError, kstest
 from .multivariate_test import test_kstest_multivar_norm, multivar_kstest2
 from .stat_test import kstest, plt_to_base64_encoded_image, all_tests
 from scipy.stats.stats import KstestResult
@@ -11,6 +11,10 @@ from scipy.stats.stats import KstestResult
 def import_sample_ndim(name):
     df=pd.read_csv(name, header=None)
     return np.asarray(df)
+
+#following four functions take prior/likelihood parameters, observation and returns the updated 
+#posterior parameters
+
 #1 univariate normal with unknown mean and std
 # prior: normal (mean), inverse gamma (var), likelihood: normal
 def normal_unknown_mu_std(parameters, obs):
@@ -82,6 +86,9 @@ def multivar_norm_inv_wishart(parameters, obs):
     
     return first_new, second_new, third_new, term4
 
+#takes a sample for mean and for standar deviation, observations, paramters, (and optionsl weights)
+#and returns % of p values passd for mean, for variance, test result for mean and for variance in that order
+#optional plot=True will plot  the pdf of mean/var against exact curve
 
 def test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, mean_weights=[], var_weights=[], plot=True):
     N=len(posterior_mean)
@@ -127,8 +134,7 @@ def test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, mea
     else:
         return perc_passed_mean, perc_passed_var, all_tests(posterior_mean, F=exact_mean, weights=mean_weights, tup=False), all_tests(posterior_var, F=exact_var, weights=var_weights, tup=False)
 
-obs=[1,1,1,0,1,1,0,0,1,1,1,1]
-
+#tests the above function by generating samples for mean and variance and then passes them to above function
 def testing_test_function_normal(size, obs, parameters=(1,2,3,4)):
     mu,nu,alpha,beta=parameters
     with pm.Model() as model:
@@ -141,6 +147,8 @@ def testing_test_function_normal(size, obs, parameters=(1,2,3,4)):
     return test_normal_two_unknowns(posterior_mean, posterior_var, obs, parameters, plot=False)
 
 
+#generates posterior distribution for multivariate normal using pymc's inference algorithm
+#and passes the result to a function that tests it 
 def test_multivar_norm_known_cov(obs=[], size=2500, mean0=[0,0,0], cov0=np.identity(3), cov=np.identity(3)):
     if len(mean0)!=len(cov0):
         raise CustomError('dimension of prior cov does not match prior mean')
@@ -157,6 +165,9 @@ def test_multivar_norm_known_cov(obs=[], size=2500, mean0=[0,0,0], cov0=np.ident
     newparam=multivar_norm_known_cov(mean0, cov0, cov, obs)
     return test_kstest_multivar_norm(distribution=trace['mean'], mean=newparam[0], cov=newparam[1], allplots=False)
 
+#given sample of covariance, exact sample (one from exact distribution) and optional weights of the same form
+#and goes through each dimension of the covariance matrix and does ks test individually 
+#and return the largest d value and correspoinding p
 def test_cov(posterior_cov, exact_cov, weights):
     n =len(np.asarray(posterior_cov))
     dim=len(posterior_cov[0])
@@ -166,7 +177,7 @@ def test_cov(posterior_cov, exact_cov, weights):
     pvals_cov=[]
     for i in dim:
         for j in dim:
-            d=stats.kstest(posterior_cov[:,i,j], exact_cov[:,i,j])[0]
+            d=  kstest(posterior_cov[:,i,j], exact_cov[:,i,j], weights=weights[:,i,j])[0]
             p=stats.kstwo.sf(d, n)
             Dvals_cov.append(d)
             pvals_cov.append(p)
@@ -180,6 +191,10 @@ def test_cov(posterior_cov, exact_cov, weights):
     
     return KstestResult(d_cov, p_cov), pplot_cov
 
+
+### gets posterior of cov, observations and parameters as inputs
+# generte exact sample from analytically calculated posterior
+#and passes the posterior and exact sample to the above fuction
 def multivarnorm_unknown_cov(posterior_cov, obs, parameters, weights=[]):
     n =len(np.asarray(posterior_cov))
     newparam= multivar_norm_known_mu(*parameters, obs=obs)
@@ -222,16 +237,3 @@ def compare_NIW_exact_sample(posterior_mean, posterior_cov, obs, parameters,mean
     
         return ks_mean, ks_cov, [pplot_mean, pplot_cov]
 
-stats.cramervonmises
-
-
-if __name__=='__main__':
-    #pass
-    #testing normal with two unknown
-    print(testing_test_function_normal(size=2000, obs=obs))
-    
-    #testing multivar norm with known cov
-    #print (test_multivar_norm_known_cov())
-    
-    #testing multvar norm 
-    

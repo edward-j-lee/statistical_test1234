@@ -36,9 +36,11 @@ def inference_problem(request, problem_type):
         return HttpResponse("Error: No such problem type")
 
     form = INFERENCE_PROBLEMS[problem_type][0]
+    #after user selects an inference problem it returns appropraite form to collect data
     if request.method == "GET":
         return render(request, "form.html", {"form" : form(), "problem_type": problem_type})
 
+    #after user submits data, it gets the files and sends it to appropriate function in helper
     elif request.method == "POST": 
         form = form(request.POST, request.FILES)
         if not form.is_valid():
@@ -169,6 +171,7 @@ def inference_problem(request, problem_type):
                     all_plots=[i.decode() for i in all_plots]
                     ### fix
                     return render(request, "multivar3.html", {"result1": result_mean, "result2": result_cov, "plots":all_plots})
+
 
 def blackbox(request):
     if request.method == "GET":

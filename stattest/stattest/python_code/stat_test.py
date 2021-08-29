@@ -10,10 +10,8 @@ from . import ks_2samp_modified
 import base64
 import io
 
-cdf=stats.beta.cdf
-args=(2,3)
 
-
+#converts plots to base 64 to display on html page
 def plt_to_base64_encoded_image():
     io_bytes = io.BytesIO()
     plt.savefig(io_bytes, format="png")
@@ -21,6 +19,8 @@ def plt_to_base64_encoded_image():
     plt.clf()
     return base64.b64encode(io_bytes.read())
 
+#reorders sample and weights (and generates uniform weights if weights is empty)
+#filters samples with empty or neglibgible weights
 def reorder(sample, weights=[]):
     #inputs are np arrays
     if len(weights)==0:
@@ -29,9 +29,10 @@ def reorder(sample, weights=[]):
     s_w=s_w[s_w[:, 0].argsort()]
     sample=s_w[:,0]
     weights=s_w[:,1]
-    cond=weights>0
+    cond=weights>0.0001
     return sample[cond], weights[cond]
 
+#returns list of ecdfs and list of cdfs
 def ecdf_cdf(sample, weights, cdf, args=()):
     #sample and weights are assumed to be ordered appropriately
     total=np.sum(weights)
@@ -40,7 +41,7 @@ def ecdf_cdf(sample, weights, cdf, args=()):
     if True:
         return ecdfs, cdfs
 
-
+#calculates an ecdf for a given sample and wegiths
 def ecdf_x(x, sample, weights):
     #sample and weights are assuemd to be reorderd already
     total=np.sum(weights)
@@ -53,6 +54,8 @@ def ecdf_x(x, sample, weights):
         ind=np.where(sample>x)[0][0]-1
         return ecdfs[ind]
 
+#peforms all statitiscal tests on given sample and weights
+# if tup is true it returns the result dictionary and plot in a tuple
 def all_tests(sample, F, args=(), weights=[], tup=True):
     ksresult=kstest(sample, F.cdf, args, weights)
     chisqtest=chisquare(sample, F.cdf, args, bins=100, range_=None, weights=weights)
@@ -70,7 +73,7 @@ def all_tests(sample, F, args=(), weights=[], tup=True):
         return totalresult
     
 
-
+#performs ks tess to a given sample and weights
 def kstest(sample, cdf, args=(), weights=[]):
     N=len(sample)
     if callable(cdf):
@@ -87,7 +90,7 @@ def kstest(sample, cdf, args=(), weights=[]):
         
 #print (kstest( [0,0,1,1,0,0,1], lambda x: stats.beta.cdf(x, 2,3)))
 
-
+#performs chisquaretest 
 def chisquare(sample, cdf, args=(), bins=100, range_=None, weights=[]):
     N=len(sample)
     if len(weights)==0:
@@ -119,9 +122,6 @@ def plot_p_from_sampling_algo(sampler, cdf, args, sample_size=50, p_size=1000, t
             perc+=1
     plt.hist(pval, bins=100, density=True)
     return (perc/p_size) *100
-
-#example
-#plot_p_from_sampling_algo(generate_weighted1, cdf, (2,3), sample_size=50, p_size=1000, test=kstest)
 
 
 #https://towardsdatascience.com/integrals-are-fun-illustrated-riemann-stieltjes-integral-b71a6e003072
@@ -155,6 +155,7 @@ def cramer_rs(sample, cdf, args=(), weights=[]):
     p = max(0, 1. - _cdf_cvm(w, N))
     return w, p
  
+ #cramer for weighted case using direct formula (see report)
 def cramer2(sample, cdf, args=(), weights=[]):
     sample, weights= reorder(sample, weights)
     ecdfs, cdfs= ecdf_cdf(sample, weights, cdf, args)
@@ -206,9 +207,4 @@ def MSE(sample, f, n):
         res+=(true_mom-sample_moment)**2
     return res/n
 
-if __name__=='__main__':
-    pass
-    #print ('cramer scipy', stats.cramervonmises(sample, stats.beta.cdf, args=(2,3)))
-    #print ('cramer estimated', cramer_rs(sample, stats.beta.cdf, args=(2,3)))
-    #print ('cramer new ', cramer2(sample, stats.beta.cdf, (2,3)))
 

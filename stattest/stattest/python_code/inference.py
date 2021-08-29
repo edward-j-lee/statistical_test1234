@@ -19,12 +19,9 @@ class CustomError(Exception):
 
 #following series of functions functions
 #take prior parameters and observations (as array)
-#generates sample from exact distribution
-#N is number of data points of the user generated posterior
-#p> 0.01 means pass keep track with increasing posterior size
-# examples of multivariate inf problems that work
-#generate nice plots with number of samples changed for diff inf algorithm
+#generates parameters for posteriro
 
+#p> 0.01 means pass keep track with increasing posterior size
 critical_p_val=0.01
 
 
@@ -67,25 +64,19 @@ def normal_known_mu(parameters, obs):
     return alpha_new, beta_new
 
 
-#takes a name of a csv file that contains one dimensional data
-#and returns a 1 dimensional np array 
-def import_sample(name):
-    name+='.csv'
-    df=pd.read_csv(name, header=None)
-    Series=np.asarray(df).flatten()
-    Series=Series[np.logical_not(np.isnan(Series))]
-    return Series #np array
-
-
+#maching problem name to functions
 distributions={'beta_bernoulli': beta_bernoulli, 'gamma_poisson':gamma_poisson, 'normal_known_var':normal_known_var, 'normal_known_mu':normal_known_mu,}
 prior_likelihood={'normal_known_mu': (stats.invgamma, stats.norm), 'normal_known_var':(stats.norm, stats.norm), 'gamma_poisson': (stats.gamma, stats.poisson), 'beta_bernoulli': (stats.beta, stats.bernoulli)}
 
+#seperate list for prior functiions
 dist_func={}
 for i in prior_likelihood: 
     dist_func[i]=prior_likelihood[i][0]
 
 
-
+#given posterior and either exact sample or cdf, and optional weights,
+# divdies the poseterior sample into multiple parts and repeats the ks tests
+# returns percentage of p values passed
 def plot_p(posterior, exactsample_or_cdf, weights=[], plotp=True):
     N=len(posterior)
     posterior=np.asarray(posterior)
@@ -140,6 +131,7 @@ def plot_p(posterior, exactsample_or_cdf, weights=[], plotp=True):
             plot=None
     return perc_passed, plot
 
+#does ks test of the posterior distribution with samples generated from exact posterior
 def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=False, factor=10):
 
     N=len(posterior)
@@ -159,6 +151,8 @@ def compare(posterior, obs, parameters, distribution_name, weights=[], plot=True
     perc_passed= plot_p(posterior, exact, weights=weights, plotp=plotp)
     return perc_passed, kstest(posterior, exact, weights=weights)
 
+#does multiple tests on posterior with exact cdf
+#optionally plots pdf and cdf
 def test_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=True, plotp=True):
     all_plots = []
     N=len(posterior)
@@ -201,7 +195,7 @@ def test_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=Tru
     return perc_passed, test_result, all_plots
 
 
-
+#benchmark inference with pymc
 def benchmark(obs, parameters, distribution_name, N):
     N=int(N/4)
     if distribution_name=='beta_bernoulli':
@@ -237,7 +231,8 @@ def benchmark(obs, parameters, distribution_name, N):
         F=stats.invgamma(*normal_known_mu(parameters, obs))
         return all_tests(trace['var'], F)[0]
 
-
+#inference with other algorithms
+#name of inference algorithm is passed as parameters
 def benchmark2(obs, parameters, distribution_name, N, inference):
     prior, likelihood=prior_likelihood(distribution_name)
     #seperates the prior parameters from likelihood parameters
@@ -277,53 +272,4 @@ def any_benchmark(obs, parameters, distribution_name, N, algorithm):
         return benchmark2(obs, parameters, distribution_name, N, inference=algorithm)
      
         
-        
-
-
-sample_size=[1000,5000,10000,50000,100000,500000,1000000]
-passed=[]
-overallp=[]
-if __name__=='__main__':
-    print ('hello world')
-    #obs=import_sample('obs2')
-    #posterior=import_sample('posterior2')
-    #print (kstest_cdf(posterior, obs=import_sample('obs2'), parameters=(2,3), distribution_name='beta_bernoulli', plot=True, plotp=True))
-    #print (compare(posterior, obs, (2,3),'beta_bernoulli', plot=True,plotp=True, factor=100))
-    y_obs=[0]*8+[1]*2
-    dictionary=dict()
-    """
-    for i in sample_size:
-        with pm.Model() as model:
-            prior=pm.Beta(name='prior', alpha=2, beta=3)
-            likelihood=pm.Bernoulli(name='bern', p=prior, observed=y_obs)
-            trace=pm.sample(int(i/4))
-        print ('comparing sample size', i)
-        K=kstest_cdf(posterior=trace['prior'], obs=y_obs, parameters=(2,3), distribution_name= 'beta_bernoulli', plot=False, plotp=False)
-        dictionary[i]=(K[0], K[1][1])
-        passedratios.append(K[0])
-        pvalues.append(K[1][1])
-        print ('for sample size', i, ', ',K[0], '% has passed')
-    output = open('pymc_posterior_inference_betabernoulli_2_3_with_varying_sample_size', 'wb')
-    pickle.dump(dictionary, output)
-    output.close()
-    """
-    """
-    k='pymc_posterior_inference_betabernoulli_2_3_with_varying_sample_size'
-    file=open(k, 'rb')
-    b = pickle.load(file)
-    xpoints=np.sort(np.asarray(list(b.keys())))
-    for i in xpoints:
-        overallp.append(b[i][1])
-        passed.append(b[i][0]/100)
-    plt.plot(xpoints, passed, color='r', label='passed ratio')
-    plt.plot(xpoints, overallp, color='b', label='overall p value')
-    plt.axhline(y=0.01, label='critical value')
-    plt.semilogx()
-    plt.legend(loc="upper right")
-    plt.xlabel='number of samples'
-    plt.title('p values of beta_bernoulli inference problem given different sample size')
-    plt.show()
-
-
-    """
         

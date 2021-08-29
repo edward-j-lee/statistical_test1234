@@ -6,6 +6,7 @@ from .inference import CustomError
 from scipy.stats.stats import KstestResult
 import matplotlib.pyplot as plt
 
+#calculates n dimensional ecdf
 def ecdf_x_ndim(x, dist, weights):
     #x is tuple or list, dist and weights are dataframe
     dim=len(x)
@@ -19,7 +20,7 @@ def ecdf_x_ndim(x, dist, weights):
 
 
         
-
+#using the n dimensional ecdf and cdf, performs ks test on n dimensional data points as a whole
 def mutlivariate_kstest(samples,cdf, args=(), weights=[]):
 
     dstats=[abs(ecdf_x_ndim(np.asarray(i[1]), samples, weights)-cdf(np.asarray(i[1]), *args)) for i in samples.iterrows()]
@@ -29,6 +30,7 @@ def mutlivariate_kstest(samples,cdf, args=(), weights=[]):
     p = np.clip(p, 0, 1)
     return KstestResult(D,p)
 
+#plots the p value and returns % of p values that passed
 def plot_p_multivar(samples, cdf, weights, allplots=True):
     N=len(samples)
     if len(weights)!=N:
@@ -79,6 +81,8 @@ def plot_p_multivar(samples, cdf, weights, allplots=True):
             plot=None
     return perc_passed, plot
 
+# generates weigtts if the weight is empty
+#and plots p and runs the first version of multivariate ks test
 def multivar_kstest1(samples, cdf,args, weights, allplots):
     if type(samples)==np.ndarray:
         samples=pd.DataFrame(samples, header=None, columns=None)
@@ -91,7 +95,7 @@ def multivar_kstest1(samples, cdf,args, weights, allplots):
     ksresult= mutlivariate_kstest(samples, cdf, args, weights)
     return perc, ksresult, percplot
 
-#apply ks test individually to each dimension
+#apply ks test individually to each dimension (second version of multivar ks test)
 #cdfs could be list of cdfs or list of samples for two sample test
 def multivar_kstest2(samples, cdfs, weights=[], allplots=True, title=None):
     #samples and weights are np array
@@ -202,5 +206,3 @@ def test_kstest_multivar_norm(distribution=[], weights=[], size=50, mean=[], cov
     else:
         return perc, result1, result2
 
-if __name__=='__main__':
-    print (test_kstest_multivar_norm(size=10))

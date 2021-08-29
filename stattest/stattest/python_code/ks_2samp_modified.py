@@ -5,7 +5,12 @@ from scipy.stats import distributions
 from collections import namedtuple
 
 from scipy.stats.stats import _attempt_exact_2kssamp, _compute_prob_outside_square, _compute_prob_inside_method, _count_paths_outside_method
-#import scipy.speical as special
+
+
+# the ks_2samp function in this file has been adopted from the scipy module
+# to handle the weighted two sample ks test
+
+#reorder and ecdf_x are copied from stat_test and not imported to avoid circular imports 
 
 KstestResult = namedtuple('KstestResult', ('statistic', 'pvalue'))
 def reorder(sample, weights=[]):
@@ -55,17 +60,20 @@ def ks_2samp(data1, weights, data2, alternative='two-sided', mode='auto'):
     # using searchsorted solves equal data problem
     
     #<<<<<<<<<<<<<<<<<<<<<<<< modified from here
+    #original version in comments
     """
     cdf1 = np.searchsorted(data1, data_all, side='right') / n1
     cdf2 = np.searchsorted(data2, data_all, side='right') / n2
     cddiffs = cdf1 - cdf2
     """
-    #<<<<<<<<<<<<<<<<<<<<<<<<<<<<until here
+
     
     ecdf1=lambda x: ecdf_x(x, *reorder(data1, weights))
     ecdf2=lambda x: ecdf_x(x, *reorder(data2))
     cddiffs=[ecdf1(x)-ecdf2(x) for x in data1]
-    
+        #<<<<<<<<<<<<<<<<<<<<<<<<<<<<until here
+
+
     minS = np.clip(-np.min(cddiffs), 0, 1)  # Ensure sign of minS is not negative.
     maxS = np.max(cddiffs)
     alt2Dvalue = {'less': minS, 'greater': maxS, 'two-sided': max(minS, maxS)}

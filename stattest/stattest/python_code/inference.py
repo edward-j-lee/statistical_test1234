@@ -266,7 +266,7 @@ def benchmark2(obs, parameters, distribution_name, N, inference):
     elif inference=='importance':
         res=imp_sampling_w(Likelihood, N, prior_samp, prior_pdf)
         return all_tests(res[0], F, weights=res[1])[0]
-    elif inference=='MCMC':
+    elif inference=='mcmc':
         res=MCMC_sampling_inf(Likelihood, size=N)
         return all_tests(res, F)[0]
 

@@ -22,13 +22,13 @@ def main(request):
 
 
 INFERENCE_PROBLEMS = {
-    "beta_bernoulli": (BetaBernoulliForm, ["alpha", "beta"], 1),
-    "gamma_poisson": (GammaPoissonForm, ["alpha", "beta"], 1),
-    "normal_known_var": (NormalKnownVarForm, ["prior_mean", "prior_std", "likelihood_std"], 1),
-    "normal_known_mu": (NormalKnownMuForm, ["alpha", "beta", "mu"], 1),
+    "beta_bernoulli": (BetaBernoulliForm, ["alpha", "beta", "inf_algorithm"], 1),
+    "gamma_poisson": (GammaPoissonForm, ["alpha", "beta", "inf_algorithm"], 1),
+    "normal_known_var": (NormalKnownVarForm, ["prior_mean", "prior_std", "likelihood_std", "inf_algorithm"], 1),
+    "normal_known_mu": (NormalKnownMuForm, ["alpha", "beta", "mu", "inf_algorithm"], 1),
     "normal_two_unknowns": (NormalTwoUnknownsForm, ["mu", "nu", "alpha", "beta"], 2),
     "multivar_norm_known_cov": (MultiVarNormalKnownCov, ["prior_mean", "prior_cov", "likelihood_cov"], 3),
-    "multivar_norm_known_mu": (MultiVarNormKnownMu, ["nu", "psi", "likelihood_mu"], 3),
+    "multivar_norm_known_mu": (MultiVarNormKnownMu, ["nu", "psi", "likelihood_mu", "dim"], 3),
     "multivar_norm_inv_wishart": (MultiVarNormTwoUnknowns, ["prior_mu", "kappa", "nu", "psi"], 3)}
 
 def inference_problem(request, problem_type):
@@ -48,11 +48,12 @@ def inference_problem(request, problem_type):
             parameters = INFERENCE_PROBLEMS[problem_type][1]
 
             parameters = [form.cleaned_data[parameter] for parameter in parameters]
+            parameters, benchmark_algo = parameters[:-1], parameters[-1] 
             #weights 
             if "weights" in request.FILES:
-                test_results, benchmark_results = helper.one_dimensional_test(posterior=request.FILES["test_file_posterior"], obs=request.FILES["test_file_obs"], parameters=parameters, dist_name=problem_type, weights=request.FILES["weights"])
+                test_results, benchmark_results = helper.one_dimensional_test(posterior=request.FILES["test_file_posterior"], obs=request.FILES["test_file_obs"], parameters=parameters, dist_name=problem_type, weights=request.FILES["weights"], algorithm_name=benchmark_algo)
             else:
-                test_results, benchmark_results = helper.one_dimensional_test(posterior=request.FILES["test_file_posterior"], obs=request.FILES["test_file_obs"], parameters=parameters, dist_name=problem_type, weights=None)
+                test_results, benchmark_results = helper.one_dimensional_test(posterior=request.FILES["test_file_posterior"], obs=request.FILES["test_file_obs"], parameters=parameters, dist_name=problem_type, weights=None, algorithm_name=benchmark_algo)
             
             all_plots=[i.decode() for i in test_results[2]]
             newdic={}
@@ -126,8 +127,13 @@ def inference_problem(request, problem_type):
                     likelihood_mu=request.FILES["likelihood_mu"]
                     likelihood_mu=helper.to_ndarray(likelihood_mu)
                     parameters= nu, psi, likelihood_mu
-                    result, all_plots =helper.multivar_norm_known_mu(posterior, weights, obs, parameters)
+                    
+                    dim=INFERENCE_PROBLEMS[problem_type][1][3]
+                    dim=form.cleaned_data[dim]
+
+                    result, all_plots =helper.multivar_norm_known_mu(posterior, weights, obs, parameters, dim)
                     all_plots=[i.decode() for i in all_plots]
+                    
                     return render(request, "multivar2.html", {"result": result, "plots":all_plots})
 
                 elif problem_type=="multivar_norm_inv_wishart":
@@ -173,6 +179,14 @@ def blackbox(request):
         posterior2=request.FILES['sample2']
         posterior3=request.FILES['sample3']
         posterior4=request.FILES['sample4']
+        posterior5=request.FILES['sample5']
+        posterior6=request.FILES['sample6']
+        posterior7=request.FILES['sample7']
+        posterior8=request.FILES['sample8']
+        posterior9=request.FILES['sample9']
+        posterior10=request.FILES['sample10']
+        posterior11=request.FILES['sample11']
+
 
 
         if "weights1" in request.FILES:
@@ -191,14 +205,43 @@ def blackbox(request):
             weights4=request.FILES['weights4']
         else:
             weights4=[]
-
+        if "weights5" in request.FILES:
+            weights5=request.FILES['weights5']
+        else:
+            weights5=[]
+        if "weights6" in request.FILES:
+            weights6=request.FILES['weights6']
+        else:
+            weights6=[]
+        if "weights7" in request.FILES:
+            weights7=request.FILES['weights7']
+        else:
+            weights7=[]
+        if "weights8" in request.FILES:
+            weights8=request.FILES['weights8']
+        else:
+            weights8=[]
+        if "weight9" in request.FILES:
+            weights9=request.FILES['weights9']
+        else:
+            weights9=[]
+        if "weights10" in request.FILES:
+            weights10=request.FILES['weights10']
+        else:
+            weights10=[]
+        if "weights11" in request.FILES:
+            weights11=request.FILES['weights11']
+        else:
+            weights11=[]
         
-        res=helper.benchmark_problems([posterior1, posterior2, posterior3, posterior4],[weights1, weights2, weights3, weights4])
+        res=helper.benchmark_problems([posterior1, posterior2, posterior3, posterior4, posterior5, posterior6, posterior7, posterior8, posterior9, posterior10, posterior11],[weights1, weights2, weights3, weights4, weights5, weights6, weights7, weights8, weights9, weights10, weights11])
         plots = [res[i][1] for i in res]
 
         for i in res:
             res[i] = res[i][0]
+
         res["plots"] = plots
+
         return render(request, "blackbox_result.html", res)     
 
 

@@ -270,6 +270,6 @@ def any_benchmark(obs, parameters, distribution_name, N, algorithm):
         return benchmark(obs, parameters, distribution_name, N)
     else:
         return benchmark2(obs, parameters, distribution_name, N, inference=algorithm)
-     
-        
+
+
         

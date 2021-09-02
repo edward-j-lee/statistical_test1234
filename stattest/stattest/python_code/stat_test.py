@@ -24,17 +24,17 @@ def plt_to_base64_encoded_image():
 def reorder(sample, weights=[]):
     #inputs are np arrays
     if len(weights)==0:
-        weights=np.asarray([1]*len(sample))
+        weights=np.ones(len(sample))
     s_w=np.stack((sample, weights), axis=1)
     s_w=s_w[s_w[:, 0].argsort()]
     sample=s_w[:,0]
     weights=s_w[:,1]
-    cond=weights>0.0001
+    cond=weights>0  
     return sample[cond], weights[cond]
 
 #returns list of ecdfs and list of cdfs
 def ecdf_cdf(sample, weights, cdf, args=()):
-    #sample and weights are assumed to be ordered appropriately
+    #sample and weights are assumed to be ordered appropriately (ie already passed through 'reorder' function)
     total=np.sum(weights)
     ecdfs=(np.cumsum(weights))/total
     cdfs=cdf(sample, *args)
@@ -57,11 +57,12 @@ def ecdf_x(x, sample, weights):
 #peforms all statitiscal tests on given sample and weights
 # if tup is true it returns the result dictionary and plot in a tuple
 def all_tests(sample, F, args=(), weights=[], tup=True):
+    sample, weights= reorder(sample, weights)
     ksresult=kstest(sample, F.cdf, args, weights)
     chisqtest=chisquare(sample, F.cdf, args, bins=100, range_=None, weights=weights)
     cramer=cramer2(sample, F.cdf, args, weights)
-    rsquared, plot2=R_sqaure(sample, F.pdf, weights, plot=True, bins=100)
-    MSE_=MSE(sample, F, 10)
+    rsquared, plot2=R_square(sample, F.pdf, weights, plot=True, bins=100)
+    MSE_=MSE(sample, weights, F.pdf)
     totalresult= {'KS test': ksresult,
     'chi square test': chisqtest,
     'cramer von mises criteron': cramer,
@@ -73,7 +74,7 @@ def all_tests(sample, F, args=(), weights=[], tup=True):
         return totalresult
     
 
-#performs ks tess to a given sample and weights
+#performs ks test to a given sample and weights
 def kstest(sample, cdf, args=(), weights=[]):
     N=len(sample)
     if callable(cdf):
@@ -168,43 +169,29 @@ def cramer2(sample, cdf, args=(), weights=[]):
     p = max(0, 1. - _cdf_cvm(w, N))
     return w,p
 
-
-def R_sqaure(sample, pdf, weights=[], bins=0, plot=False):
-    N=len(sample)
+#R squared  
+def R_square(sample, pdf, weights=[], bins=100, plot=False):
     if len(weights)==0:
-        weights=[1]*N
-    if bins==0:
-        bins=int(N/10)
+        weights=np.ones(len(sample))
     yval, xval=np.histogram(sample, weights=weights, bins=bins, density=True)
-    xval=xval[1:]
-    ȳ=np.mean(yval)
-    SS_tot=0
-    SS_res=0
-    es=[]
-    for i in range(bins):
-        SS_tot+=(yval[i]-ȳ)**2
-        e=pdf(xval[i])-yval[i]
-        es.append(e)
-        SS_res+=e**2
-    R_sq=1-(SS_res/SS_tot)
-    if plot==True: # plots residual graph
-        plt.scatter(xval, es)
-        plt.title('Residual graph for R square')
-        plot = plt_to_base64_encoded_image()
-        return R_sq, plot
-    return R_sq
-
-def nmoment(x, n):
-    return np.sum((x)**n) / np.size(x)
-
-f=stats.beta(a=2,b=3)
-
-def MSE(sample, f, n):
-    res=0
-    for i in range(n):
-        sample_moment=nmoment(sample, i)
-        true_mom=f.moment(n=i)
-        res+=(true_mom-sample_moment)**2
-    return res/n
+    xval=(xval[1:]+xval[:-1])/2
+    y_line=np.vectorize(pdf)(xval)
+    var_mean=np.sum(np.square(np.subtract(yval, np.mean(yval))))
+    obs_error=np.subtract(yval, y_line)
+    var_line=np.sum(np.square(obs_error))
+    if plot==True:
+        plt.scatter(xval, obs_error)
+    return (var_mean-var_line)/var_mean
 
 
+#mean squared error
+def MSE(sample, weights, f_pdf):
+    vals= np.histogram(sample, weights=weights, bins=100, density=True)
+    xs  = vals[1][1:]
+    ys  = vals[0]
+    return np.mean([(ys[i]-f_pdf(xs[i]))**2 for i in range(len(ys))])
+
+try:
+    0/0
+except:
+    pass

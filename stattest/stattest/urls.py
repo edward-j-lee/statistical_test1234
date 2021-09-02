@@ -9,4 +9,4 @@ urlpatterns = [
     path("", views.main),
     path("blackbox", views.blackbox),
     path('<str:problem_type>', views.inference_problem)
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
     <head>
@@ -6,10 +7,8 @@
         <title></title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="">
     </head>
     <body>
-hello world1234
     <form action = "{{problem_type}}" method = "post" enctype="multipart/form-data">
         {% csrf_token %}
         {{form|linebreaks}}

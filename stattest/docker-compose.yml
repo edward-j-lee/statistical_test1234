@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  stattest:
+    build: .
+    command: python manage.py runserver 0:8000
+    volumes:
+      - .:/code
+    ports:
+      - "80:8000"

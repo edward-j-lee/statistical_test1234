@@ -186,12 +186,12 @@ def R_square(sample, pdf, weights=[], bins=100, plot=False):
 
 #mean squared error
 def MSE(sample, weights, f_pdf):
-    vals= np.histogram(sample, weights=weights, bins=100, density=True)
+    N=int(len(sample)/10)
+    vals= np.histogram(sample, weights=weights, bins=N, density=True)
     xs  = vals[1][1:]
     ys  = vals[0]
     return np.mean([(ys[i]-f_pdf(xs[i]))**2 for i in range(len(ys))])
 
-try:
-    0/0
-except:
-    pass
+if __name__=="__main__":
+    while True:
+        continue

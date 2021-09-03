@@ -5,3 +5,6 @@ WORKDIR /stattest
 COPY requirements.txt /stattest/
 RUN pip install -r requirements.txt
 COPY . /stattest/
+CMD [ "python", "/stattest/manage.py", "runserver", "0:8000" ]
+
+

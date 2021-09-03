@@ -12,7 +12,8 @@ from django.shortcuts import redirect, render, resolve_url
 from . import helper
 import numpy as np
 
-
+def test(request):
+    return HttpResponse("Working")
 
 def main(request):
     if request.method == "GET":

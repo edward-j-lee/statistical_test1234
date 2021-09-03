@@ -6,6 +6,7 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('test', views.test),
     path("", views.main),
     path("blackbox", views.blackbox),
     path('<str:problem_type>', views.inference_problem)

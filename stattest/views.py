@@ -11,9 +11,7 @@ from .forms import *
 from django.shortcuts import redirect, render, resolve_url
 from . import helper
 import numpy as np
-
-def test(request):
-    return HttpResponse("Working")
+from .test import *
 
 def main(request):
     if request.method == "GET":
@@ -24,7 +22,7 @@ def main(request):
 
 INFERENCE_PROBLEMS = {
     "beta_bernoulli": (BetaBernoulliForm, ["alpha", "beta", "inf_algorithm"], 1),
-    "gamma_poisson": (GammaPoissonForm, ["alpha", "beta", "inf_algorithm"], 1),
+    "gamma_poisson": (GammaPoissonForm, ["alpha", "scale", "inf_algorithm"], 1),
     "normal_known_var": (NormalKnownVarForm, ["prior_mean", "prior_std", "likelihood_std", "inf_algorithm"], 1),
     "normal_known_mu": (NormalKnownMuForm, ["alpha", "beta", "mu", "inf_algorithm"], 1),
     "normal_two_unknowns": (NormalTwoUnknownsForm, ["mu", "nu", "alpha", "beta"], 2),
@@ -41,7 +39,7 @@ def inference_problem(request, problem_type):
     if request.method == "GET":
         return render(request, "form.html", {"form" : form(), "problem_type": problem_type})
 
-    #after user submits data, it gets the files and sends it to appropriate function in helper
+    #after user su  its data, it gets the files and sends it to appropriate function in helper
     elif request.method == "POST": 
         form = form(request.POST, request.FILES)
         if not form.is_valid():
@@ -105,19 +103,20 @@ def inference_problem(request, problem_type):
                     prior_mean=request.FILES["prior_mean"]
                     prior_cov=request.FILES["prior_cov"]
                     likelihood_cov=request.FILES["likelihood_cov"]
-                    print ('b', prior_mean)
+     
                     prior_mean=helper.to_1darray(prior_mean)
                     prior_cov=helper.to_ndarray(prior_cov)
                     likelihood_cov=helper.to_ndarray(likelihood_cov)
-                    print (prior_mean)
+
 
                     parameters=prior_mean, prior_cov, likelihood_cov
-                    result, benchmark_result, all_plots = helper.multivar_norm_known_cov(posterior, weights, obs, parameters)
+
+                    result, benchmark_result, all_plots = helper.multivar_norm_known_cov1(posterior, weights, obs, parameters)
                     all_plots=[i.decode() for i in all_plots]
                     newdic={}
-                    newdic["percentage of p passed in multivariate KS test v.1"] = [result[0], benchmark_result[0]] 
-                    newdic["KS test 1"] = [result[1], benchmark_result[1]]
-                    newdic["KS test 2"] = [result[2], benchmark_result[2]]
+                    newdic["percentage of passed p values across dimenensions"] = [result[0], benchmark_result[0]] 
+                   # newdic["KS test 1"] = [result[1], benchmark_result[1]]
+                    newdic["KS test"] = [result[1], benchmark_result[1]]
             
                     return render(request, "multivar1.html", {"test_result": newdic, "plots":all_plots})
                 elif problem_type=="multivar_norm_known_mu":
@@ -125,19 +124,21 @@ def inference_problem(request, problem_type):
                     nu = form.cleaned_data[nu]
 
                     psi=request.FILES["psi"]
-                    psi=helper.to_ndarray(psi)
+
 
                     likelihood_mu=request.FILES["likelihood_mu"]
-                    likelihood_mu=helper.to_ndarray(likelihood_mu)
-                    parameters= nu, psi, likelihood_mu
+
+                    parameters= [nu, psi, likelihood_mu]
                     
                     dim=INFERENCE_PROBLEMS[problem_type][1][3]
                     dim=form.cleaned_data[dim]
 
-                    result, all_plots =helper.multivar_norm_known_mu(posterior, weights, obs, parameters, dim)
+                    perc, result, all_plots =helper.multivar_norm_known_mu(posterior, weights, obs, parameters, dim)
                     all_plots=[i.decode() for i in all_plots]
-                    
-                    return render(request, "multivar2.html", {"result": result, "plots":all_plots})
+                    newdic={}
+                    newdic["percentage"] = perc
+                    newdic["results"] = result  
+                    return render(request, "multivar2.html", {"test_result": newdic, "plots":all_plots})
 
                 elif problem_type=="multivar_norm_inv_wishart":
                     posterior_mean = request.FILES["posterior_mean"]
@@ -170,7 +171,6 @@ def inference_problem(request, problem_type):
 
                     result_mean, result_cov, all_plots=helper.multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weights, parameters, obs)
                     all_plots=[i.decode() for i in all_plots]
-                    ### fix
                     return render(request, "multivar3.html", {"result1": result_mean, "result2": result_cov, "plots":all_plots})
 
 

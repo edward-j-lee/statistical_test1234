@@ -11,7 +11,18 @@
     <body>
     <h1 style="align:center">RESULTS</h1>
 
-    {{result}}
+  <table>
+    <tr>
+    <th></th>
+    <th>user's inference</th>
+    </tr>
+    {% for label, values in test_result.items%}
+    <tr>
+        <td>{{label}}</td>
+        <td>{{values}}</td>
+    </tr>
+    {% endfor%}
+    </table>
 
     <h1>Plots</h1>
     {% for image in plots %}

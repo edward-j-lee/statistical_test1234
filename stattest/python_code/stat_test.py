@@ -61,7 +61,7 @@ def all_tests(sample, F, args=(), weights=[], tup=True):
     ksresult=kstest(sample, F.cdf, args, weights)
     chisqtest=chisquare(sample, F.cdf, args, bins=100, range_=None, weights=weights)
     cramer=cramer2(sample, F.cdf, args, weights)
-    rsquared, plot2=R_square(sample, F.pdf, weights, plot=True, bins=100)
+    rsquared, plot2=R_square(sample, F.pdf, weights, plot=tup, bins=100)
     MSE_=MSE(sample, weights, F.pdf)
     totalresult= {'KS test': ksresult,
     'chi square test': chisqtest,
@@ -181,7 +181,11 @@ def R_square(sample, pdf, weights=[], bins=100, plot=False):
     var_line=np.sum(np.square(obs_error))
     if plot==True:
         plt.scatter(xval, obs_error)
-    return (var_mean-var_line)/var_mean
+        plt.title('residual plot')
+        residual_plot=plt_to_base64_encoded_image()
+    else:
+        residual_plot=None
+    return (var_mean-var_line)/var_mean, residual_plot
 
 
 #mean squared error

@@ -17,7 +17,7 @@ class GammaPoissonForm(forms.Form):
     test_file_obs = forms.FileField(label="observed")
     weights = forms.FileField(label="weights", required=False) #optional
     alpha = forms.FloatField(label="alpha")
-    beta= forms.FloatField(label="beta")
+    scale= forms.FloatField(label="scale")
     inf_algorithm= forms.ChoiceField(label="benchmark inference algoirthm", choices=Choices)
 class NormalKnownVarForm(forms.Form):
     test_file_posterior = forms.FileField(label="posterior")

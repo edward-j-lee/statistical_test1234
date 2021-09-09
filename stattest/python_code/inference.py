@@ -9,7 +9,7 @@ import pickle
 from .stat_test import all_tests, kstest, reorder, ecdf_x,ecdf_cdf, plt_to_base64_encoded_image
 from .sampling_algorithms.importance import imp_sampling_w
 from .sampling_algorithms.MCMC import MCMC_sampling_inf
-from .sampling_algorithms.rejection import acc_rej_samp, supx
+from .sampling_algorithms.rejection import acc_rej_samp
 
 
 class CustomError(Exception):
@@ -35,12 +35,15 @@ def beta_bernoulli(parameters, obs):
 
 
 def gamma_poisson(parameters, obs):
+    alpha, scale=parameters
+    beta=1/scale
     s=np.sum(obs)
     n=len(obs)
-    alpha_new=parameters[0]+s
-    beta_new=parameters[1]+n
+    alpha_new=alpha+s
+    beta_new=beta+n
     #stats.gamma.rvs(a=alpha_new, scale=1/beta_new, size=factor*N)
-    return alpha_new, beta_new
+    scale_new=1/beta_new
+    return alpha_new, scale_new
 
 def normal_known_var(parameters, obs):
     prior_mean,prior_std, likelihood_std=parameters
@@ -158,7 +161,10 @@ def test_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=Tru
     N=len(posterior)
     print ('comparing with exact cdf')
     newparam=distributions[distribution_name](parameters, obs)
-    F=dist_func[distribution_name](*newparam)
+    if distribution_name=="gamma_poisson": #gamma poisson has to be seperated because of position of its parameters are different
+        F=stats.gamma(a=newparam[0], scale=newparam[1])
+    else:
+        F=dist_func[distribution_name](*newparam)
     cdf =lambda x: F.cdf(x)
     pdf= lambda x: F.pdf(x)
     if len(weights)==0:
@@ -207,9 +213,9 @@ def benchmark(obs, parameters, distribution_name, N):
         F=stats.beta(*beta_bernoulli(parameters, obs))
         return all_tests(trace['θ'], F)[0]
     if distribution_name=='gamma_poisson':
-        a,b=parameters
+        a,scale=parameters
         with pm.Model() as model:
-            θ=pm.Gamma('θ', alpha=a, beta=b)
+            θ=pm.Gamma('θ', alpha=a, beta=1/scale)
             y=pm.Poisson('y', mu=θ, observed=obs)
             trace=pm.sample(N)
         F=stats.gamma(*gamma_poisson(parameters, obs))
@@ -234,7 +240,7 @@ def benchmark(obs, parameters, distribution_name, N):
 #inference with other algorithms
 #name of inference algorithm is passed as parameters
 def benchmark2(obs, parameters, distribution_name, N, inference):
-    prior, likelihood=prior_likelihood(distribution_name)
+    prior, likelihood=prior_likelihood[distribution_name]
     #seperates the prior parameters from likelihood parameters
     def sep_param(param, name):
         if name=='normal_known_var' or name=='normal_known_mu':
@@ -242,29 +248,57 @@ def benchmark2(obs, parameters, distribution_name, N, inference):
         else:
             return param, []
     prior_param, likeli_param = sep_param(parameters, distribution_name)
-    def Likelihood(x):
-        return np.prod(likelihood.pdf(obs, x, *likeli_param)) * prior.pdf(x)
-    prior_samp=lambda x: prior.cdf(size=x, *prior_param)
-    prior_pdf=lambda x: prior.pdf(x, *prior_param)
+    if distribution_name=='gamma_poisson': #gamma poisson has to be seperated because of issue
+            #related to positining of parameters with the scipy.gamma method
+        prior_=stats.gamma(a=prior_param[0], scale=prior_param[1])
+        prior_samp=lambda x: prior_.rvs(size=x)
+        prior_pdf=lambda x: prior_.pdf(x)
+    else:
+        prior_samp=lambda x: prior.rvs(size=x, *prior_param)
+        prior_pdf=lambda x: prior.pdf(x, *prior_param)
 
+    def Likelihood_prior1(x): #product of likelihood and prior (=posterior without normalizing constant - evidence)
+            return np.prod(likelihood.pdf(obs, x, *likeli_param)) * prior_pdf(x)
     newparam=distributions[distribution_name](parameters, obs)
+
+    def Likelihood_prior2(x): # the above function is used for continuous distribution
+        #discrete must be seperated since discrete distribuiton in scipy have 'pmf' instead of
+        #'.pdf' method
+        return np.prod(likelihood.pmf(obs, x))*prior_pdf(x)
 
     F=prior(*newparam)
 
     if inference=='rejection':
         if distribution_name=='beta_bernoulli':
-            X=supx(func=Likelihood, xrange=(0,1)) #since in beta bernoulli x is between 0 and 1
+            res=acc_rej_samp(func=Likelihood_prior2, g_pdf=prior_pdf, g_samp=prior_samp, N=N, ran=(0,1)) 
+            #since in beta bernoulli x is between 0 and 1
+        elif distribution_name=='gamma_poisson':
+            res=acc_rej_samp(func=Likelihood_prior2, g_pdf=prior_pdf, g_samp=prior_samp, N=N) 
+            F=prior(a=newparam[0], scale=newparam[1]) 
         else:
-            X=supx(func=Likelihood) #for all other distributions, range is -20, 20
-        res=acc_rej_samp(func=Likelihood, g_pdf=prior_pdf, g_samp=prior_samp, supX=X, N=N)
+            res=acc_rej_samp(func=Likelihood_prior1, g_pdf=prior_pdf, g_samp=prior_samp, N=N)
         return all_tests(res, F)[0]
     elif inference=='importance':
-        res=imp_sampling_w(Likelihood, N, prior_samp, prior_pdf)
+        if distribution_name=='beta_bernoulli' or distribution_name=='gamma_poisson':
+            res=imp_sampling_w(Likelihood_prior2, N, prior_samp, prior_pdf)
+            if distribution_name=='gamma_poisson':
+                F=prior(a=newparam[0], scale=newparam[1])
+        else:
+            res=imp_sampling_w(Likelihood_prior1, N, prior_samp, prior_pdf)
         return all_tests(res[0], F, weights=res[1])[0]
     elif inference=='mcmc':
-        res=MCMC_sampling_inf(Likelihood, size=N)
+        if distribution_name=='beta_bernoulli' or distribution_name=='gamma_poisson':
+            res=MCMC_sampling_inf(Likelihood_prior2, size=N)
+            if distribution_name=='gamma_poisson':
+                F=prior(a=newparam[0], scale=newparam[1])
+        else:
+            res=MCMC_sampling_inf(Likelihood_prior1, size=N)
         return all_tests(res, F)[0]
 
+#takes information necessary to do bayesian inference 
+#(observatiosn, parameters, prbolem name and sample size)
+#along with the name of inference algorithm to use (pymc, rejection, importance and MCMC)
+#returns the test result of the inference algorithm in given inference problem
 def any_benchmark(obs, parameters, distribution_name, N, algorithm):
     if algorithm=='pymc3':
         return benchmark(obs, parameters, distribution_name, N)

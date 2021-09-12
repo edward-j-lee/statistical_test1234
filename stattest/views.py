@@ -31,6 +31,7 @@ INFERENCE_PROBLEMS = {
     "multivar_norm_inv_wishart": (MultiVarNormTwoUnknowns, ["prior_mu", "kappa", "nu", "psi"], 3)}
 
 def inference_problem(request, problem_type):
+    print ('in fproblem')
     if problem_type not in INFERENCE_PROBLEMS:
         return HttpResponse("Error: No such problem type")
 

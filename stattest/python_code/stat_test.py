@@ -196,6 +196,3 @@ def MSE(sample, weights, f_pdf):
     ys  = vals[0]
     return np.mean([(ys[i]-f_pdf(xs[i]))**2 for i in range(len(ys))])
 
-if __name__=="__main__":
-    while True:
-        continue

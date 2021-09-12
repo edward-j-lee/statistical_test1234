@@ -96,7 +96,7 @@ class BlackboxInference(forms.Form):
     weights7=forms.FileField(label="weights for problem 7", required=False)
     sample8=forms.FileField(label="problem 8: normal with prior parameters of (0,10) and likelihood std of 10, obs=10")
     weights8=forms.FileField(label="weights for problem 8", required=False)
-
+    
 """
     sample9=forms.FileField(label="problem 9: Beta Bernoulli with prior parameters of (1,12.55), obs=[0]")
     weights9=forms.FileField(label="weights for problem 9", required=False)

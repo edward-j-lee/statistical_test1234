@@ -1,2 +1,0 @@
-alpha=3
-scale=0.5

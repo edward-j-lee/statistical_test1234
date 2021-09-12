@@ -1,1 +1,0 @@
-mu,nu,alpha, beta= 4,3,2,1

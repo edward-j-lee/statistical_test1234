@@ -75,7 +75,53 @@ def test_kstest_multivar_norm(distribution, mean, cov, weights=[],allplots=True)
     #checks if any of mean, cov or distribution is empty and generates some data for the purpose of unit testing
     #they should all be given in pracitice whenever this function is called
     n,dim=distribution.shape
-    sample=np.asarray(distribution)
+    """
+    if mean==[] and cov==[] and distribution==[]:
+        mean=[0]*4
+        cov=np.identity(4)
+        sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+        n,dim=size,4
+    if mean==[] and cov==[] and distribution !=[]:
+        n,dim=distribution.shape
+        mean=[0]*dim
+        cov=np.identity(dim)
+    if mean==[] and cov!=[] and distribution==[]:
+        mean=[0]*len(cov)
+        sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+        n, dim=size, len(cov)
+    if mean==[] and cov!=[] and distribution!=[]:
+        n,dim = distribution.shape
+        if len(cov)!=dim:
+            cov=np.identity(dim)
+        else:
+            mean=[0]*dim
+    if mean!=[] and cov==[] and distribution==[]:
+        cov=np.identity(len(mean))
+        sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+        dim=len(mean)
+        n=size
+    if mean!=[] and cov==[] and distribution!=[]:
+        n,dim=distribution.shape
+        if len(mean)!=dim:
+            mean=[0]*dim
+        cov=np.identity(dim)
+    if mean!=[] and cov!=[] and distribution==[]:
+        if len(cov)!=len(mean):
+            cov=np.identity(len(mean))
+        sample=stats.multivariate_normal.rvs(mean=mean, cov=cov, size=size)
+        dim=len(mean)
+        n=size
+    if mean!=[] and cov!=[] and distribution!=[]:
+        n,dim=distribution.shape
+        if len(mean)!=dim:
+            mean=[0]*dim
+        if len(cov)!=dim:
+            cov=np.identity(dim)
+            """
+    try:
+        sample
+    except NameError:
+        sample=np.asarray(distribution)
     if len(weights)==0:
         weights=np.ones(n*dim).reshape(n,dim)
     cdfs=[(stats.norm(loc=mean[i], scale=np.sqrt(cov[i][i])).cdf ) for i in range(dim)]

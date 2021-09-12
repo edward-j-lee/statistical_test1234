@@ -47,7 +47,7 @@ def gamma_poisson(parameters, obs):
 
 def normal_known_var(parameters, obs):
     prior_mean,prior_std, likelihood_std=parameters
-    μ0, τ0, τ = prior_mean, 1/prior_std, 1/(likelihood_std**2)
+    μ0, τ0, τ = prior_mean, 1/prior_std**2, 1/(likelihood_std**2)
     n=len(obs)
     τ_new=τ0+n*τ
     x_bar=np.mean(obs)
@@ -59,10 +59,11 @@ def normal_known_var(parameters, obs):
 
 def normal_known_mu(parameters, obs):
 #inverse gamma
+    obs=np.asarray(obs)
     alpha, beta, mu = parameters
     n=len(obs)
     alpha_new=alpha+n/2
-    beta_new=beta+(np.sum([(i-mu)**2 for i in obs]))/2
+    beta_new=beta+np.sum(np.square(obs-mu))/2
     # stats.invgamma.rvs(a=alpha_new, scale=beta_new, size=factor*N)
     return alpha_new, beta_new
 
@@ -161,8 +162,13 @@ def test_cdf(posterior, obs, parameters, distribution_name, weights=[], plot=Tru
     N=len(posterior)
     print ('comparing with exact cdf')
     newparam=distributions[distribution_name](parameters, obs)
+    print (newparam)
     if distribution_name=="gamma_poisson": #gamma poisson has to be seperated because of position of its parameters are different
         F=stats.gamma(a=newparam[0], scale=newparam[1])
+    elif distribution_name=="normal_known_var" :
+        F=stats.norm(scale=newparam[1], loc=newparam[0])
+    elif distribution_name=="normal_known_mu":
+        F=stats.invgamma(a=newparam[0], scale=newparam[1])
     else:
         F=dist_func[distribution_name](*newparam)
     cdf =lambda x: F.cdf(x)
@@ -218,7 +224,8 @@ def benchmark(obs, parameters, distribution_name, N):
             θ=pm.Gamma('θ', alpha=a, beta=1/scale)
             y=pm.Poisson('y', mu=θ, observed=obs)
             trace=pm.sample(N)
-        F=stats.gamma(*gamma_poisson(parameters, obs))
+        newparam=gamma_poisson(parameters, obs)
+        F=stats.gamma(a=newparam[0], scale=newparam[1])
         return all_tests(trace['θ'], F)[0]
     if distribution_name=='normal_known_var':
         mu0, std0, std=parameters
@@ -226,21 +233,24 @@ def benchmark(obs, parameters, distribution_name, N):
             mean=pm.Normal('mean', mu=mu0, sigma=std0)
             y=pm.Normal('y', mu=mean, sigma=std, observed=obs)
             trace=pm.sample(N)
-        F=stats.norm(*normal_known_var(parameters, obs))
+        newparam=normal_known_var(parameters, obs)
+        F=stats.norm(loc=newparam[0], scale=newparam[1])
         return all_tests(trace['mean'], F)[0]
     if distribution_name=='normal_known_mu':
         a,b, mu=parameters
         with pm.Model() as model:
-            var=pm.InverseGamma('var', allpha=a, beta=b)
+            var=pm.InverseGamma('var', alpha=a, beta=b)
             y=pm.Normal('y', mu=mu, sigma=np.sqrt(var), observed=obs) ##########not sure
             trace=pm.sample(N)
-        F=stats.invgamma(*normal_known_mu(parameters, obs))
+        newparam=normal_known_mu(parameters, obs)
+        F=stats.invgamma(a=newparam[0], scale=newparam[1])
         return all_tests(trace['var'], F)[0]
 
 #inference with other algorithms
 #name of inference algorithm is passed as parameters
 def benchmark2(obs, parameters, distribution_name, N, inference):
     prior, likelihood=prior_likelihood[distribution_name]
+    print ('name', distribution_name)
     #seperates the prior parameters from likelihood parameters
     def sep_param(param, name):
         if name=='normal_known_var' or name=='normal_known_mu':
@@ -253,14 +263,18 @@ def benchmark2(obs, parameters, distribution_name, N, inference):
         prior_=stats.gamma(a=prior_param[0], scale=prior_param[1])
         prior_samp=lambda x: prior_.rvs(size=x)
         prior_pdf=lambda x: prior_.pdf(x)
-    else:
+    elif distribution_name=="normal_known_mu":
+        prior_=stats.invgamma(a=3, scale=4)
+        prior_samp=lambda x: prior_.rvs(size=x)
+        prior_pdf=lambda x: prior_.pdf(x)
+    else:      
         prior_samp=lambda x: prior.rvs(size=x, *prior_param)
         prior_pdf=lambda x: prior.pdf(x, *prior_param)
 
     def Likelihood_prior1(x): #product of likelihood and prior (=posterior without normalizing constant - evidence)
             return np.prod(likelihood.pdf(obs, x, *likeli_param)) * prior_pdf(x)
     newparam=distributions[distribution_name](parameters, obs)
-
+    print ('new param', newparam)
     def Likelihood_prior2(x): # the above function is used for continuous distribution
         #discrete must be seperated since discrete distribuiton in scipy have 'pmf' instead of
         #'.pdf' method
@@ -277,7 +291,15 @@ def benchmark2(obs, parameters, distribution_name, N, inference):
             F=prior(a=newparam[0], scale=newparam[1]) 
         else:
             res=acc_rej_samp(func=Likelihood_prior1, g_pdf=prior_pdf, g_samp=prior_samp, N=N)
+            if distribution_name=="normal_known_mu":
+                #cannot use likelihood1 in this case since the parameter order is reversed
+                #mu comes first but it is the likelihood paramater and var is x 
+                target=lambda x: np.prod(stats.norm.pdf(obs, loc=likeli_param[0], scale=x))*prior_pdf(x)
+                res= acc_rej_samp(func=target, g_pdf=prior_pdf, g_samp=prior_samp, N=N) 
+                #res is overwritten
+                F=prior(a=newparam[0], scale=newparam[1])
         return all_tests(res, F)[0]
+    
     elif inference=='importance':
         if distribution_name=='beta_bernoulli' or distribution_name=='gamma_poisson':
             res=imp_sampling_w(Likelihood_prior2, N, prior_samp, prior_pdf)
@@ -285,6 +307,14 @@ def benchmark2(obs, parameters, distribution_name, N, inference):
                 F=prior(a=newparam[0], scale=newparam[1])
         else:
             res=imp_sampling_w(Likelihood_prior1, N, prior_samp, prior_pdf)
+            if distribution_name=="normal_known_mu":
+                a,b=prior_param
+                d,e=newparam
+                c=likeli_param
+                print ('param', prior_param, likeli_param)
+                target=lambda x: np.prod(stats.norm.pdf([5], loc=c, scale=x))*stats.invgamma.pdf(x, a=a, scale=b)
+                res=imp_sampling_w(target, N, prior_samp, prior_pdf)
+                F=stats.invgamma(a=d, scale=e)
         return all_tests(res[0], F, weights=res[1])[0]
     elif inference=='mcmc':
         if distribution_name=='beta_bernoulli' or distribution_name=='gamma_poisson':
@@ -293,6 +323,10 @@ def benchmark2(obs, parameters, distribution_name, N, inference):
                 F=prior(a=newparam[0], scale=newparam[1])
         else:
             res=MCMC_sampling_inf(Likelihood_prior1, size=N)
+            if distribution_name=="normal_known_mu":
+                target=lambda x: np.prod(stats.norm.pdf(obs, loc=likeli_param[0], scale=x))*prior_pdf(x)
+                res=MCMC_sampling_inf(target, size=N)
+                F=prior(a=newparam[0], scale=newparam[1])
         return all_tests(res, F)[0]
 
 #takes information necessary to do bayesian inference 

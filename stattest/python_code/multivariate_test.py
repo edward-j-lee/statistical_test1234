@@ -124,7 +124,6 @@ def test_kstest_multivar_norm(distribution, mean, cov, weights=[],allplots=True)
         sample=np.asarray(distribution)
     if len(weights)==0:
         weights=np.ones(n*dim).reshape(n,dim)
-
     cdfs=[(stats.norm(loc=mean[i], scale=np.sqrt(cov[i][i])).cdf ) for i in range(dim)]
     pdfs=[stats.norm(loc=mean[i], scale=np.sqrt(cov[i][i])).pdf  for i in range(dim)]
 

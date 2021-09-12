@@ -1,10 +1,16 @@
 import numpy as np
 import scipy.stats as stats
 
-def  imp_sampling_w(p, N, q_samp, q_pdf):
+def  imp_sampling_1(p, N, q_samp, q_pdf):
     xvar=(q_samp(N))
     zvar=np.vectorize(lambda x: (p(x))/q_pdf(x))(xvar)
     return xvar, zvar
+
+def  imp_sampling_w(p, N, q_samp, q_pdf):
+    xvar=(q_samp(N))
+    zvar=np.vectorize(lambda x: (p(x))/q_pdf(x))(xvar)
+    w_t=np.sum(zvar)
+    return xvar, zvar/w_t
 
 def generate_weighted1(size, p=lambda x: stats.beta.pdf(x,2,3)):
     g_pdf=lambda x: stats.uniform.pdf(x)

@@ -187,9 +187,10 @@ def blackbox(request):
         posterior6=request.FILES['sample6']
         posterior7=request.FILES['sample7']
         posterior8=request.FILES['sample8']
+        """
         posterior9=request.FILES['sample9']
         posterior10=request.FILES['sample10']
-        posterior11=request.FILES['sample11']
+        posterior11=request.FILES['sample11']"""
 
 
 
@@ -225,6 +226,7 @@ def blackbox(request):
             weights8=request.FILES['weights8']
         else:
             weights8=[]
+            """
         if "weight9" in request.FILES:
             weights9=request.FILES['weights9']
         else:
@@ -236,7 +238,7 @@ def blackbox(request):
         if "weights11" in request.FILES:
             weights11=request.FILES['weights11']
         else:
-            weights11=[]
+            weights11=[]"""
         
         res=helper.benchmark_problems([posterior1, posterior2, posterior3, posterior4, posterior5, posterior6, posterior7, posterior8, posterior9, posterior10, posterior11],[weights1, weights2, weights3, weights4, weights5, weights6, weights7, weights8, weights9, weights10, weights11])
         plots = [res[i][1] for i in res]

@@ -11,7 +11,6 @@ from .forms import *
 from django.shortcuts import redirect, render, resolve_url
 from . import helper
 import numpy as np
-from .test import *
 
 def main(request):
     if request.method == "GET":
@@ -92,6 +91,7 @@ def inference_problem(request, problem_type):
             return render(request, "results_NIG.html", {"test_result" : newdic, "plots": all_plots})
 
         elif INFERENCE_PROBLEMS[problem_type][2]==3:
+            print (problem_type)
             if problem_type=="multivar_norm_known_cov" or problem_type=="multivar_norm_known_mu":
                 posterior=request.FILES["posterior"]
                 obs=request.FILES["obs"]
@@ -140,38 +140,35 @@ def inference_problem(request, problem_type):
                     newdic["results"] = result  
                     return render(request, "multivar2.html", {"test_result": newdic, "plots":all_plots})
 
-                elif problem_type=="multivar_norm_inv_wishart":
-                    posterior_mean = request.FILES["posterior_mean"]
-                    posterior_cov= request.FILES["posterior_cov"]
+            elif problem_type=="multivar_norm_inv_wishart":
+                print ('niw')
+                obs=request.FILES["obs"]
+                posterior_mean = request.FILES["posterior_mean"]
+                posterior_cov= request.FILES["posterior_cov"]
 
-                    if "mean_weights" in request.FILES:
-                        mean_weights = request.FILES["mean_weights"]
-                    else:
-                        mean_weights = []
-                    if "cov_weights" in request.FILES:
-                        cov_weights = request.FILES["cov_weights"]
-                    else:
-                        cov_weights=[]
+                obs=helper.to_ndarray(obs)
 
-                    obs=request.FILES["obs"]
-
-                    #parameters
-                    prior_mu=request.FILES["prior_mu"]
-                    prior_mu=helper.to_1darray(prior_mu)
-
-                    kappa=INFERENCE_PROBLEMS[problem_type][1][1]
-                    kappa = form.cleaned_data[kappa]
-                    nu = INFERENCE_PROBLEMS[problem_type][1][2]
-                    nu=form.cleaned_data[nu]
-
-                    psi=request.FILES["psi"]
-                    psi=helper.to_ndarray(psi)
-
-                    parameters=prior_mu, kappa, nu, psi
-
-                    result_mean, result_cov, all_plots=helper.multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weights, parameters, obs)
-                    all_plots=[i.decode() for i in all_plots]
-                    return render(request, "multivar3.html", {"result1": result_mean, "result2": result_cov, "plots":all_plots})
+                if "mean_weights" in request.FILES:
+                    mean_weights = request.FILES["mean_weights"]
+                else:
+                    mean_weights = []
+                if "cov_weights" in request.FILES:
+                    cov_weights = request.FILES["cov_weights"]
+                else:
+                    cov_weights=[]
+                #parameters
+                prior_mu=request.FILES["prior_mu"]
+                prior_mu=helper.to_1darray(prior_mu)
+                kappa=INFERENCE_PROBLEMS[problem_type][1][1]
+                kappa = form.cleaned_data[kappa]
+                nu = INFERENCE_PROBLEMS[problem_type][1][2]
+                nu=form.cleaned_data[nu]
+                psi=request.FILES["psi"]
+                psi=helper.to_ndarray(psi)
+                parameters=prior_mu, kappa, nu, psi
+                result_mean, result_cov, all_plots=helper.multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weights, parameters, obs)
+                all_plots=[i.decode() for i in all_plots]
+                return render(request, "multivar3.html", {"result1": result_mean, "result2": result_cov, "plots":all_plots})
 
 
 def blackbox(request):

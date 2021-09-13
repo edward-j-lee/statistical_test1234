@@ -70,6 +70,8 @@ def multivar_norm_known_mu(parameters, obs):
 # prior: multivariate normal (mean), inverse wishart (cov), likelihood (normal)
 def multivar_norm_inv_wishart(parameters, obs):
     x1, x2, x3, x4 = parameters
+    print ('afsd')
+    print (obs)
     xbar=np.mean(obs, axis=0)
     n=len(obs)
     first_new=np.add(np.multiply(x2, x1), np.multiply(n,xbar))/(x2+n)
@@ -251,7 +253,11 @@ def multivarnorm_two_unknowns_sample(mu, k, v, phi, size=100):
     if v<len(phi):
         raise CustomError('df must be greater than dimension of phi')
     cov=stats.invwishart.rvs(df=v, scale=phi, size=size)
-    mean=stats.multivariate_normal.rvs(size=size, mean=mu, cov=np.multiply(1/k,cov))
+    meanlist=[]
+    for i in cov:
+        mean=stats.multivariate_normal.rvs(size=1, mean=mu, cov=np.multiply(1/k,i))
+        meanlist.append(mean)
+    mean=np.asarray(meanlist)
     return mean, cov
 
 
@@ -285,7 +291,8 @@ def test_mu(posterior_mu, exact_mu, weights):
     Dvals_mu=[]
     pvals_mu=[]
     final_mu_plots=[]
-
+    if len(weights)==0:
+        weights=np.ones(n*dim).reshape(n,dim)
     for i in range(dim):
         d=  kstest(posterior_mu[:,i], exact_mu[:,i], weights=weights[:,i])[0]
         p=stats.kstwo.sf(d, n)

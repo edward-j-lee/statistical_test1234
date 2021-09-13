@@ -88,6 +88,7 @@ def multiver_norm_unknown(posterior_mean, posterior_cov, mean_weights, cov_weigh
     if cov_weights:
         cov_weights=to_nbyn_matrix(cov_weights, dim)
     result_mean, result_cov, all_plots= compare_NIW_exact_sample(posterior_mean, posterior_cov, obs, parameters, mean_weights, cov_weights)
+    print ('helper', type(all_plots))
     return result_mean, result_cov, all_plots
 
 

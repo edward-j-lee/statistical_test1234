@@ -253,6 +253,7 @@ def multivarnorm_two_unknowns_sample(mu, k, v, phi, size=100):
     if v<len(phi):
         raise CustomError('df must be greater than dimension of phi')
     cov=stats.invwishart.rvs(df=v, scale=phi, size=size)
+    print ('cov')
     meanlist=[]
     for i in cov:
         mean=stats.multivariate_normal.rvs(size=1, mean=mu, cov=np.multiply(1/k,i))
@@ -267,19 +268,18 @@ def multivarnorm_two_unknowns_sample(mu, k, v, phi, size=100):
 #returns the result of ks test with respect to the exact sample
    
 def compare_NIW_exact_sample(posterior_mean, posterior_cov, obs, parameters,mean_weights=[], cov_weights=[]):
+    print ('compare niw start')
     n=len(posterior_mean)
     newparam=multivar_norm_inv_wishart(parameters, obs)
     if n<=1000:
-        exact_size=100000
+        exact_size=10000
     else:
-        exact_size=10**6
+        exact_size=10**^=6
     exact_mean, exact_cov=multivarnorm_two_unknowns_sample(*newparam, size=exact_size)
-
     perc_mean, ks_mean, plot_mean= test_mu(posterior_mean, exact_mean, mean_weights)
-    
     perc_cov, ks_cov, plot_cov = test_cov(posterior_cov, exact_cov, weights=cov_weights)
-
-    return perc_mean, perc_cov, ks_mean, ks_cov, plot_mean+plot_cov
+    print (plot_mean, plot_cov)
+    return (perc_mean, ks_mean), (perc_cov, ks_cov), plot_mean+plot_cov
 
 #analogous to test_cov but with mean vectors
 #testing samples of mu against exact samples
@@ -324,7 +324,7 @@ def test_mu(posterior_mu, exact_mu, weights):
         newexact=exact_mu[:,i][cond]
         plt.hist(newexact, color='r', density=True, histtype='step', bins=100, label='exact')
         plt.legend()
-        plt.title('plotting result of ',i,'th dimension')
+        plt.title('plotting result of '+str(i+1)+'th dimension')
         final_mu_plots.append(plt_to_base64_encoded_image())
 
     d_mu=max(Dvals_mu)

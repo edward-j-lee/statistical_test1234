@@ -274,7 +274,7 @@ def compare_NIW_exact_sample(posterior_mean, posterior_cov, obs, parameters,mean
     if n<=1000:
         exact_size=10000
     else:
-        exact_size=10**^=6
+        exact_size=10**=6
     exact_mean, exact_cov=multivarnorm_two_unknowns_sample(*newparam, size=exact_size)
     perc_mean, ks_mean, plot_mean= test_mu(posterior_mean, exact_mean, mean_weights)
     perc_cov, ks_cov, plot_cov = test_cov(posterior_cov, exact_cov, weights=cov_weights)

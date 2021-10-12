@@ -9,7 +9,36 @@ from scipy.stats.stats import KstestResult
 from . import ks_2samp_modified
 import base64
 import io
+"""
+def _cdf_cvm(x, n=None):
+    
+    #Calculate the cdf of the Cramér-von Mises statistic for a finite sample
+    #size n. If N is None, use the asymptotic cdf (n=inf)
 
+    #See equation 1.8 in Csorgo, S. and Faraway, J. (1996) for finite samples,
+    #1.2 for the asymptotic cdf.
+
+    #The function is not expected to be accurate for large values of x, say
+    #x > 2, when the cdf is very close to 1 and it might return values > 1
+    #in that case, e.g. _cdf_cvm(2.0, 12) = 1.0000027556716846.
+    
+    x = np.asarray(x)
+    if n is None:
+        y = _cdf_cvm_inf(x)
+    else:
+        # support of the test statistic is [12/n, n/3], see 1.1 in [2]
+        y = np.zeros_like(x, dtype='float')
+        sup = (1./(12*n) < x) & (x < n/3.)
+        # note: _psi1_mod does not include the term _cdf_cvm_inf(x) / 12
+        # therefore, we need to add it here
+        y[sup] = _cdf_cvm_inf(x[sup]) * (1 + 1./(12*n)) + _psi1_mod(x[sup]) / n
+        y[x >= n/3] = 1
+
+    if y.ndim == 0:
+        return y[()]
+    return y
+
+"""
 
 #converts plots to base 64 to display on html page
 def plt_to_base64_encoded_image():
